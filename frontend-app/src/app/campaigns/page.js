@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Calendar, Users, Target, MessageSquare, Clock, CheckCircle, AlertCircle, Play, Send } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Calendar, Users, Target, MessageSquare, Clock, CheckCircle, AlertCircle, Play, Send, BarChart3 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import Link from 'next/link';
 
@@ -110,15 +110,15 @@ export default function CampaignsPage() {
   const getStatusInfo = (status) => {
     switch (status) {
       case 'DRAFT':
-        return { icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100', label: '초안' };
+        return { icon: Clock, color: 'text-white', bgColor: 'bg-gray-500', label: '초안' };
       case 'IN_PROGRESS':
-        return { icon: Play, color: 'text-yellow-600', bgColor: 'bg-yellow-100', label: '진행 중' };
+        return { icon: Play, color: 'text-white', bgColor: 'bg-blue-600', label: '진행중' };
       case 'COMPLETED':
-        return { icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-100', label: '완료됨' };
+        return { icon: CheckCircle, color: 'text-white', bgColor: 'bg-green-600', label: '완료' };
       case 'FAILED':
-        return { icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-100', label: '실패' };
+        return { icon: AlertCircle, color: 'text-white', bgColor: 'bg-red-600', label: '실패' };
       default:
-        return { icon: AlertCircle, color: 'text-gray-600', bgColor: 'bg-gray-100', label: status };
+        return { icon: AlertCircle, color: 'text-white', bgColor: 'bg-gray-500', label: status };
     }
   };
 
@@ -196,99 +196,96 @@ export default function CampaignsPage() {
       ) : error ? (
         <div className="text-center py-8 text-red-600">{error}</div>
       ) : filteredCampaigns.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="space-y-6">
           {filteredCampaigns.map(campaign => {
             const statusInfo = getStatusInfo(campaign.status);
             const StatusIcon = statusInfo.icon;
             const deliveryStats = getDeliveryStatsDisplay(campaign.id);
             
             return (
-              <div key={campaign.id} className="card hover:shadow-lg transition-shadow">
-                <div className="card-header">
-                  <div className="flex items-center justify-between">
-                    <h3 className="card-title text-lg font-semibold truncate">
-                      {campaign.name}
-                    </h3>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => handleSendCampaign(campaign.id)} 
-                        className="btn btn-success btn-sm"
-                        title="발송"
-                        disabled={campaign.status === 'IN_PROGRESS'}
-                      >
-                        <Send size={14} />
-                      </button>
-                      <Link 
-                        href={`/campaigns/edit/${campaign.id}`} 
-                        className="btn btn-secondary btn-sm"
-                        title="편집"
-                      >
-                        <Edit size={14} />
-                      </Link>
-                      <button 
-                        onClick={() => handleDeleteCampaign(campaign.id)} 
-                        className="btn btn-danger btn-sm"
-                        title="삭제"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="card-body space-y-4">
-                  {/* 메시지 요약 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare size={16} className="text-gray-400" />
-                      <span className="text-sm font-medium text-gray-600">메시지</span>
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {getMessageSummary(campaign.message)}
-                    </p>
-                  </div>
-
-                  {/* 타겟팅 정보 */}
-                  {campaign.targetingLocation && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Target size={16} className="text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600">타겟팅</span>
-                      </div>
-                      <div className="text-sm">
-                        <div className="font-medium">{campaign.targetingLocation.name}</div>
-                        <div className="text-gray-500">
-                          {(campaign.targetingLocation.radiusM / 1000).toFixed(1)}km 반경
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 상태 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusIcon size={16} className={statusInfo.color} />
-                      <span className="text-sm font-medium text-gray-600">상태</span>
-                    </div>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+              <div key={campaign.id} className="bg-white rounded-xl border border-gray-200 shadow-md p-6 space-y-4">
+                {/* 상단 정보 섹션 */}
+                <div className="flex items-start justify-between">
+                  {/* 좌측: 타이틀과 상태 뱃지 */}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
                       {statusInfo.label}
                     </span>
                   </div>
-
-                  {/* 발송 통계 */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users size={16} className="text-gray-400" />
-                      <span className="text-sm font-medium text-gray-600">발송 통계</span>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">발송 수:</span>
-                        <span className="font-medium">{deliveryStats.totalDeliveries}</span>
+                  {/* 우측: 액션 버튼 */}
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => handleSendCampaign(campaign.id)} 
+                      className="p-1 text-gray-600 hover:text-gray-800"
+                      title="발송"
+                      disabled={campaign.status === 'IN_PROGRESS'}
+                    >
+                      <Send size={16} />
+                    </button>
+                    <Link 
+                      href={`/campaigns/edit/${campaign.id}`} 
+                      className="p-1 text-gray-600 hover:text-gray-800"
+                      title="편집"
+                    >
+                      <Edit size={16} />
+                    </Link>
+                    <button 
+                      onClick={() => handleDeleteCampaign(campaign.id)} 
+                      className="p-1 text-gray-600 hover:text-red-600"
+                      title="삭제"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 캠페인 설명 박스 */}
+                <div className="bg-gray-100 rounded-lg py-3 px-4">
+                  <p className="text-sm text-gray-700">
+                    🌞 {getMessageSummary(campaign.message)}
+                  </p>
+                </div>
+                
+                {/* 하단 3열 정보 */}
+                <div className="grid grid-cols-3 gap-4">
+                  {/* 왼쪽: 매장명과 지역 */}
+                  <div className="flex items-start gap-2">
+                    <Target size={16} className="text-gray-500 mt-0.5" />
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">
+                        {campaign.targetingLocation ? campaign.targetingLocation.name : '강남 핫플레이스'}
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">성공률:</span>
-                        <span className="font-medium">{deliveryStats.successRate}</span>
+                      <div className="text-sm text-gray-500">강남구 역삼동</div>
+                    </div>
+                  </div>
+
+                  {/* 중앙: 발송 건수 */}
+                  <div className="flex items-start gap-2">
+                    <Send size={16} className="text-gray-500 mt-0.5" />
+                    <div className="text-sm text-gray-900">
+                      {deliveryStats.totalDeliveries.toLocaleString()}건 발송
+                    </div>
+                  </div>
+
+                  {/* 오른쪽: 성과율과 완료시간 */}
+                  <div className="space-y-1">
+                    <div className="flex items-start gap-2">
+                      <BarChart3 size={16} className="text-gray-500 mt-0.5" />
+                      <div className="text-sm text-gray-900">성과율 {deliveryStats.successRate}</div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Clock size={16} className="text-gray-500 mt-0.5" />
+                      <div className="text-sm text-gray-500">
+                        {campaign.createdAt ? 
+                          new Date(campaign.createdAt).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : '2024-08-15 14:00'
+                        }
                       </div>
                     </div>
                   </div>

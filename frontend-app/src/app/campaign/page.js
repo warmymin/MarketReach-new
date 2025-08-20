@@ -77,24 +77,65 @@ export default function CampaignPage() {
               </div>
               <button className="btn btn-primary"><Plus size={16} />새 캠페인 생성</button>
             </div>
-            <div className="campaign-grid">
+            <div className="space-y-6">
               {campaigns.map(campaign => (
-                <div key={campaign.id} className="campaign-card">
-                  <div className="campaign-header">
-                    <h3 className="campaign-name">{campaign.name}</h3>
-                    <span className={`tag ${getStatusColor(campaign.status)}`}>{campaign.status}</span>
+                <div key={campaign.id} className="bg-white rounded-xl border border-gray-200 shadow-md p-6 space-y-4">
+                  {/* 상단 정보 섹션 */}
+                  <div className="flex items-start justify-between">
+                    {/* 좌측: 타이틀과 상태 뱃지 */}
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
+                        {campaign.status}
+                      </span>
+                    </div>
+                    {/* 우측: 액션 버튼 */}
+                    <div className="flex space-x-2">
+                      <button className="p-1 text-gray-600 hover:text-gray-800" title="편집">
+                        <Edit size={16} />
+                      </button>
+                      <button className="p-1 text-gray-600 hover:text-red-600" title="삭제">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <p className="campaign-message">{campaign.message}</p>
-                  <div className="campaign-location"><MapPin size={14} /><span>{campaign.location}</span></div>
-                  <div className="campaign-stats">
-                    <div className="stat"><Send size={14} /><span>{(campaign.sentCount || 0).toLocaleString()}건 발송</span></div>
-                    <div className="stat"><BarChart3 size={14} /><span>성공률 {campaign.successRate || 0}%</span></div>
+                  
+                  {/* 캠페인 설명 박스 */}
+                  <div className="bg-gray-100 rounded-lg py-3 px-4">
+                    <p className="text-sm text-gray-700">
+                      🌞 {campaign.message}
+                    </p>
                   </div>
-                  <div className="campaign-footer">
-                    <div className="campaign-date"><Calendar size={14} /><span>{campaign.date}</span></div>
-                    <div className="campaign-actions">
-                      <button className="action-btn"><Edit size={14} /></button>
-                      <button className="action-btn"><Trash2 size={14} /></button>
+                  
+                  {/* 하단 3열 정보 */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* 왼쪽: 매장명과 지역 */}
+                    <div className="flex items-start gap-2">
+                      <MapPin size={16} className="text-gray-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">{campaign.location}</div>
+                        <div className="text-sm text-gray-500">강남구 역삼동</div>
+                      </div>
+                    </div>
+
+                    {/* 중앙: 발송 건수 */}
+                    <div className="flex items-start gap-2">
+                      <Send size={16} className="text-gray-500 mt-0.5" />
+                      <div className="text-sm text-gray-900">
+                        {(campaign.sentCount || 0).toLocaleString()}건 발송
+                      </div>
+                    </div>
+
+                    {/* 오른쪽: 성과율과 완료시간 */}
+                    <div className="space-y-1">
+                      <div className="flex items-start gap-2">
+                        <BarChart3 size={16} className="text-gray-500 mt-0.5" />
+                        <div className="text-sm text-gray-900">성과율 {(campaign.successRate || 0).toFixed(1)}%</div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Calendar size={16} className="text-gray-500 mt-0.5" />
+                        <div className="text-sm text-gray-500">{campaign.date}</div>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -160,11 +161,16 @@ public class CustomerController {
             }
             
             List<Customer> customers = customerService.getCustomersNearLocation(lat, lng, finalRadiusM);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", customers,
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", Map.of(
+                "customers", customers,
                 "count", customers.size()
             ));
+            response.put("count", customers.size());
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,

@@ -61,10 +61,27 @@ export default function NewCampaignPage() {
         targeting.radiusM / 1000
       );
 
-      if (result && result.success && result.data) {
-        setEstimatedReach(`${result.data.count}명`);
+      console.log('캠페인 예상 도달 고객 수 결과:', result);
+
+      if (result && result.success) {
+        // 응답 구조에 따라 처리
+        if (result.count !== undefined) {
+          // count가 최상위에 있는 경우 (현재 API 응답 구조)
+          setEstimatedReach(`${result.count}명`);
+        } else if (result.data && typeof result.data === 'object' && result.data.count !== undefined) {
+          // data가 객체이고 count가 포함된 경우
+          setEstimatedReach(`${result.data.count}명`);
+        } else if (typeof result.data === 'number') {
+          // data가 숫자인 경우
+          setEstimatedReach(`${result.data}명`);
+        } else if (Array.isArray(result.data)) {
+          // data가 배열인 경우
+          setEstimatedReach(`${result.data.length}명`);
+        } else {
+          setEstimatedReach('0명');
+        }
       } else {
-        setEstimatedReach('계산 실패');
+        setEstimatedReach('0명');
       }
     } catch (error) {
       console.error('예상 도달 고객 수 계산 오류:', error);

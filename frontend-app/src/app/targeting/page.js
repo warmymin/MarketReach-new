@@ -10,6 +10,8 @@ export default function TargetingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [estimatedReachData, setEstimatedReachData] = useState({});
+  const [calculatingReach, setCalculatingReach] = useState({});
 
   // 위치 기반 타겟팅 목록 로드
   useEffect(() => {
@@ -22,6 +24,12 @@ export default function TargetingPage() {
         console.log('위치 기반 타겟팅 데이터:', targetingLocationsData);
         
         setTargetingLocations(targetingLocationsData);
+        
+        // 각 타겟팅 위치별로 예상 도달 고객 수 계산
+        if (targetingLocationsData && targetingLocationsData.length > 0) {
+          calculateAllEstimatedReach(targetingLocationsData);
+        }
+        
         setError(null);
       } catch (err) {
         console.error('위치 기반 타겟팅 데이터 로드 오류:', err);
@@ -32,6 +40,58 @@ export default function TargetingPage() {
     }
     fetchData();
   }, []);
+
+  // 모든 타겟팅 위치의 예상 도달 고객 수 계산 (병렬 처리)
+  const calculateAllEstimatedReach = async (targetings) => {
+    // 동시에 최대 3개씩 처리하여 서버 부하 방지
+    const batchSize = 3;
+    for (let i = 0; i < targetings.length; i += batchSize) {
+      const batch = targetings.slice(i, i + batchSize);
+      await Promise.all(batch.map(targeting => calculateEstimatedReach(targeting)));
+      
+      // 배치 간 약간의 지연
+      if (i + batchSize < targetings.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+  };
+
+  // 개별 타겟팅 위치의 예상 도달 고객 수 계산
+  const calculateEstimatedReach = async (targeting) => {
+    try {
+      setCalculatingReach(prev => ({ ...prev, [targeting.id]: true }));
+      
+      const result = await apiService.getNearbyCustomers(
+        targeting.centerLat,
+        targeting.centerLng,
+        targeting.radiusM / 1000
+      );
+
+      console.log(`타겟팅 ${targeting.name} 예상 도달 고객 수 결과:`, result);
+
+      if (result && result.success) {
+        let count = 0;
+        if (result.count !== undefined) {
+          count = result.count;
+        } else if (result.data && typeof result.data === 'object' && result.data.count !== undefined) {
+          count = result.data.count;
+        } else if (typeof result.data === 'number') {
+          count = result.data;
+        } else if (Array.isArray(result.data)) {
+          count = result.data.length;
+        }
+        
+        setEstimatedReachData(prev => ({ ...prev, [targeting.id]: count }));
+      } else {
+        setEstimatedReachData(prev => ({ ...prev, [targeting.id]: 0 }));
+      }
+    } catch (error) {
+      console.error(`타겟팅 ${targeting.name} 예상 도달 고객 수 계산 오류:`, error);
+      setEstimatedReachData(prev => ({ ...prev, [targeting.id]: 0 }));
+    } finally {
+      setCalculatingReach(prev => ({ ...prev, [targeting.id]: false }));
+    }
+  };
 
   // 검색 필터링
   const filteredTargetingLocations = targetingLocations.filter(targeting => {
@@ -123,7 +183,13 @@ export default function TargetingPage() {
                       </td>
                       <td>
                         <span className="font-medium text-blue-600">
-                          계산 중...
+                          {calculatingReach[targeting.id] ? (
+                            '계산 중...'
+                          ) : estimatedReachData[targeting.id] !== undefined ? (
+                            `${estimatedReachData[targeting.id]}명`
+                          ) : (
+                            '0명'
+                          )}
                         </span>
                       </td>
                       <td>

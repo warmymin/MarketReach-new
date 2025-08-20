@@ -76,18 +76,22 @@ export default function TargetingLocationPage() {
 
       if (result && result.success) {
         // 응답 구조에 따라 처리
-        if (result.data && typeof result.data === 'object') {
-          // data가 객체인 경우 (count와 customers 포함)
-          setEstimatedReach(`${result.data.count || 0}명`);
+        if (result.count !== undefined) {
+          // count가 최상위에 있는 경우 (현재 API 응답 구조)
+          setEstimatedReach(`${result.count}명`);
+          setNearbyCustomers(result.data || []);
+        } else if (result.data && typeof result.data === 'object' && result.data.count !== undefined) {
+          // data가 객체이고 count가 포함된 경우
+          setEstimatedReach(`${result.data.count}명`);
           setNearbyCustomers(result.data.customers || []);
         } else if (typeof result.data === 'number') {
           // data가 숫자인 경우
           setEstimatedReach(`${result.data}명`);
           setNearbyCustomers([]);
-        } else if (result.count !== undefined) {
-          // count가 최상위에 있는 경우
-          setEstimatedReach(`${result.count}명`);
-          setNearbyCustomers(result.data || []);
+        } else if (Array.isArray(result.data)) {
+          // data가 배열인 경우
+          setEstimatedReach(`${result.data.length}명`);
+          setNearbyCustomers(result.data);
         } else {
           setEstimatedReach('0명');
           setNearbyCustomers([]);
