@@ -115,8 +115,8 @@ export default function Dashboard() {
         <div className="card">
           <div className="card-header">
             <div className="metric">
-              <div className="metric-value">{statistics.targetings}</div>
-              <div className="metric-label">타겟팅 수</div>
+              <div className="metric-value">{statistics.targetingLocations}</div>
+              <div className="metric-label">위치 기반 타겟팅</div>
             </div>
             <MapPin size={24} className="text-orange-500" />
           </div>

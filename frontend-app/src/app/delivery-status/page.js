@@ -1,3 +1,5 @@
+'use client';
+
 import { Send, CheckCircle, XCircle, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function DeliveryStatusPage() {

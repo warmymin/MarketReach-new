@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,9 +51,7 @@ public class Customer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference("customer-targetings")
-    private List<Targeting> targetings = new ArrayList<>();
+
     
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<QrEvent> qrEvents = new ArrayList<>();
@@ -146,13 +143,7 @@ public class Customer {
         this.createdAt = createdAt;
     }
     
-    public List<Targeting> getTargetings() {
-        return targetings;
-    }
-    
-    public void setTargetings(List<Targeting> targetings) {
-        this.targetings = targetings;
-    }
+
     
     public List<QrEvent> getQrEvents() {
         return qrEvents;
@@ -163,11 +154,6 @@ public class Customer {
     }
     
     // 편의 메서드
-    public void addTargeting(Targeting targeting) {
-        targetings.add(targeting);
-        targeting.setCustomer(this);
-    }
-    
     public void addQrEvent(QrEvent qrEvent) {
         qrEvents.add(qrEvent);
         qrEvent.setCustomer(this);

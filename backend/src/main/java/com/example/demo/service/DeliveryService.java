@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.Delivery;
-import com.example.demo.entity.Targeting;
+import com.example.demo.entity.TargetingLocation;
 import com.example.demo.repository.DeliveryRepository;
-import com.example.demo.repository.TargetingRepository;
+import com.example.demo.repository.TargetingLocationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 @Service
 public class DeliveryService {
@@ -22,7 +21,7 @@ public class DeliveryService {
     private DeliveryRepository deliveryRepository;
     
     @Autowired
-    private TargetingRepository targetingRepository;
+    private TargetingLocationRepository targetingLocationRepository;
 
     public Delivery createDelivery(Delivery delivery) {
         return deliveryRepository.save(delivery);
@@ -36,12 +35,8 @@ public class DeliveryService {
         return deliveryRepository.findById(id);
     }
 
-    public List<Delivery> getDeliveriesByTargetingId(UUID targetingId) {
-        return deliveryRepository.findByTargetingId(targetingId);
-    }
-
-    public List<Delivery> getDeliveriesByCampaignId(UUID campaignId) {
-        return deliveryRepository.findByCampaignId(campaignId);
+    public List<Delivery> getDeliveriesByTargetingLocationId(UUID targetingLocationId) {
+        return deliveryRepository.findByTargetingLocationId(targetingLocationId);
     }
 
     public List<Delivery> getDeliveriesByCompanyId(UUID companyId) {
@@ -62,14 +57,6 @@ public class DeliveryService {
 
     public List<Delivery> getFailedDeliveries() {
         return deliveryRepository.findByStatusAndErrorCodeIsNotNull(Delivery.DeliveryStatus.FAIL);
-    }
-
-    public Object[] getDeliveryStatsByCampaign(UUID campaignId) {
-        return deliveryRepository.getDeliveryStatsByCampaign(campaignId);
-    }
-
-    public Object[] getDeliveryStatsByCompany(UUID companyId) {
-        return deliveryRepository.getDeliveryStatsByCompany(companyId);
     }
 
     public Delivery updateDelivery(UUID id, Delivery deliveryDetails) {
@@ -93,13 +80,13 @@ public class DeliveryService {
     }
 
     /**
-     * 메시지 전송 시뮬레이션
+     * 위치 기반 메시지 전송 시뮬레이션
      */
-    public Delivery simulateMessageDelivery(UUID targetingId) {
-        Optional<Targeting> targeting = targetingRepository.findById(targetingId);
-        if (targeting.isPresent()) {
+    public Delivery simulateLocationBasedDelivery(UUID targetingLocationId) {
+        Optional<TargetingLocation> targetingLocation = targetingLocationRepository.findById(targetingLocationId);
+        if (targetingLocation.isPresent()) {
             Delivery delivery = new Delivery();
-            delivery.setTargeting(targeting.get());
+            delivery.setTargetingLocation(targetingLocation.get());
             
             // 랜덤하게 성공/실패 시뮬레이션 (80% 성공률)
             Random random = new Random();
@@ -114,35 +101,6 @@ public class DeliveryService {
             return deliveryRepository.save(delivery);
         }
         return null;
-    }
-
-    /**
-     * 배치 메시지 전송 시뮬레이션
-     */
-    public List<Delivery> simulateBatchMessageDelivery(List<UUID> targetingIds) {
-        List<Delivery> deliveries = new ArrayList<>();
-        
-        for (UUID targetingId : targetingIds) {
-            Delivery delivery = simulateMessageDelivery(targetingId);
-            if (delivery != null) {
-                deliveries.add(delivery);
-            }
-        }
-        
-        return deliveries;
-    }
-
-    /**
-     * 캠페인 전체 메시지 전송 시뮬레이션
-     */
-    public List<Delivery> simulateCampaignDelivery(UUID campaignId) {
-        // 캠페인에 연결된 모든 타겟팅을 찾아서 배송 시뮬레이션
-        List<Targeting> targetings = targetingRepository.findByCampaignId(campaignId);
-        List<UUID> targetingIds = targetings.stream()
-                .map(Targeting::getId)
-                .collect(Collectors.toList());
-        
-        return simulateBatchMessageDelivery(targetingIds);
     }
 
     /**

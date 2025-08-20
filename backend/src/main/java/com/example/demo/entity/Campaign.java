@@ -48,9 +48,7 @@ public class Campaign {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference("campaign-targetings")
-    private List<Targeting> targetings = new ArrayList<>();
+
     
     @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<QrEvent> qrEvents = new ArrayList<>();
@@ -149,13 +147,7 @@ public class Campaign {
         this.createdAt = createdAt;
     }
     
-    public List<Targeting> getTargetings() {
-        return targetings;
-    }
-    
-    public void setTargetings(List<Targeting> targetings) {
-        this.targetings = targetings;
-    }
+
     
     public List<QrEvent> getQrEvents() {
         return qrEvents;
@@ -174,11 +166,6 @@ public class Campaign {
     }
     
     // 편의 메서드
-    public void addTargeting(Targeting targeting) {
-        targetings.add(targeting);
-        targeting.setCampaign(this);
-    }
-    
     public void addQrEvent(QrEvent qrEvent) {
         qrEvents.add(qrEvent);
         qrEvent.setCampaign(this);

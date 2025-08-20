@@ -75,66 +75,7 @@ class ApiService {
     }
   }
 
-  // 타겟팅 관련 API
-  async getTargetings() {
-    try {
-      const response = await apiClient.get('/targetings');
-      return response.data.data || [];
-    } catch (error) {
-      console.error('타겟팅 목록 조회 실패:', error);
-      return [];
-    }
-  }
 
-  async createTargeting(targeting) {
-    try {
-      const response = await apiClient.post('/targetings', targeting);
-      return response.data.data;
-    } catch (error) {
-      console.error('타겟팅 생성 실패:', error);
-      return null;
-    }
-  }
-
-  async updateTargeting(id, targeting) {
-    try {
-      const response = await apiClient.put(`/targetings/${id}`, targeting);
-      return response.data.data;
-    } catch (error) {
-      console.error('타겟팅 수정 실패:', error);
-      return null;
-    }
-  }
-
-  async deleteTargeting(id) {
-    try {
-      await apiClient.delete(`/targetings/${id}`);
-      return true;
-    } catch (error) {
-      console.error('타겟팅 삭제 실패:', error);
-      return false;
-    }
-  }
-
-  async confirmTargeting(id) {
-    try {
-      const response = await apiClient.put(`/targetings/${id}/confirm`);
-      return response.data.data;
-    } catch (error) {
-      console.error('타겟팅 확인 실패:', error);
-      return null;
-    }
-  }
-
-  async getTargetingsByCampaign(campaignId) {
-    try {
-      const response = await apiClient.get(`/targetings/campaign/${campaignId}`);
-      return response.data.data || [];
-    } catch (error) {
-      console.error('캠페인별 타겟팅 조회 실패:', error);
-      return [];
-    }
-  }
 
   // 타겟팅 위치 관련 API
   async getTargetingLocations() {
@@ -149,11 +90,37 @@ class ApiService {
 
   async createTargetingLocation(targetingLocation) {
     try {
-      const response = await apiClient.post('/targeting-locations', targetingLocation);
-      return response.data.data;
+      console.log('API 호출 - 타겟팅 위치 생성:', targetingLocation);
+      
+      // fetch를 사용하여 직접 요청
+      const response = await fetch('http://localhost:8083/api/targeting-locations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(targetingLocation)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API 응답:', data);
+      return data;
     } catch (error) {
       console.error('타겟팅 위치 생성 실패:', error);
-      return null;
+      throw error;
+    }
+  }
+
+  async deleteTargetingLocation(id) {
+    try {
+      const response = await apiClient.delete(`/targeting-locations/${id}`);
+      return response.data.success;
+    } catch (error) {
+      console.error('타겟팅 위치 삭제 실패:', error);
+      throw error;
     }
   }
 
@@ -165,6 +132,31 @@ class ApiService {
       return response.data.data;
     } catch (error) {
       console.error('예상 도달 고객 수 계산 실패:', error);
+      return null;
+    }
+  }
+
+  // 새로운 위치 기반 고객 수 계산 API (백엔드 API 사용)
+  async getNearbyCustomers(lat, lng, radius) {
+    try {
+      const response = await apiClient.get('/customers/nearby', {
+        params: { lat, lng, radius }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('근처 고객 수 계산 실패:', error);
+      return null;
+    }
+  }
+
+  // PostgreSQL 직접 연동 API
+  async getNearbyCustomersFromDB(lat, lng, radius) {
+    try {
+      const response = await fetch(`/api/customers/nearby-db?lat=${lat}&lng=${lng}&radius=${radius}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('DB에서 근처 고객 수 계산 실패:', error);
       return null;
     }
   }
@@ -194,11 +186,11 @@ class ApiService {
   // 통계 데이터 API
   async getStatistics() {
     try {
-      const [companies, customers, campaigns, targetings, deliveries] = await Promise.all([
+      const [companies, customers, campaigns, targetingLocations, deliveries] = await Promise.all([
         this.getCompanies(),
         this.getCustomers(),
         this.getCampaigns(),
-        this.getTargetings(),
+        this.getTargetingLocations(),
         this.getDeliveries(),
       ]);
 
@@ -206,7 +198,7 @@ class ApiService {
         companies: companies.length,
         customers: customers.length,
         campaigns: campaigns.length,
-        targetings: targetings.length,
+        targetingLocations: targetingLocations.length,
         deliveries: deliveries.length,
         successRate: deliveries.length > 0
           ? (deliveries.filter(d => d.status === 'SUCCESS').length / deliveries.length * 100).toFixed(1)
@@ -218,7 +210,7 @@ class ApiService {
         companies: 0,
         customers: 0,
         campaigns: 0,
-        targetings: 0,
+        targetingLocations: 0,
         deliveries: 0,
         successRate: 0,
       };

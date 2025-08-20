@@ -1,9 +1,11 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.TargetingLocation;
+import com.example.demo.entity.Company;
 import com.example.demo.service.TargetingLocationService;
 import com.example.demo.service.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,16 +25,29 @@ public class TargetingLocationController {
     @Autowired
     private CompanyService companyService;
     
+    // 테스트용 엔드포인트
+    @GetMapping("/test")
+    public ResponseEntity<Map<String, Object>> test() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "TargetingLocation API가 정상 작동합니다.");
+        return ResponseEntity.ok(response);
+    }
+    
     // 타겟팅 위치 생성
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> createTargetingLocation(@RequestBody TargetingLocation targetingLocation) {
         try {
-            // 회사 존재 여부 확인
-            if (!targetingLocationService.companyExists(targetingLocation.getCompany().getId())) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "존재하지 않는 회사입니다.");
-                return ResponseEntity.badRequest().body(response);
+            System.out.println("=== 타겟팅 위치 생성 요청 시작 ===");
+            System.out.println("받은 데이터: " + targetingLocation);
+            System.out.println("Content-Type 확인 필요");
+            
+            // 회사 정보가 없으면 기본 회사 설정
+            if (targetingLocation.getCompany() == null) {
+                // 기본 회사 ID 설정 (실제 존재하는 회사 ID로 변경 필요)
+                Company defaultCompany = new Company();
+                defaultCompany.setId(UUID.fromString("a844e499-59f2-44de-9d44-178dba113d37"));
+                targetingLocation.setCompany(defaultCompany);
             }
             
             TargetingLocation created = targetingLocationService.createTargetingLocation(targetingLocation);
@@ -44,6 +59,8 @@ public class TargetingLocationController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.out.println("오류 발생: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "타겟팅 위치 생성 실패: " + e.getMessage());

@@ -79,4 +79,17 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
                                       @Param("lng") Double lng, 
                                       @Param("companyId") UUID companyId, 
                                       @Param("limit") Integer limit);
+
+    /**
+     * 위치 기반 고객 조회 (Haversine 공식 사용, 회사 제한 없음)
+     */
+    @Query(value = "SELECT c.* FROM customers c " +
+                   "WHERE (6371 * acos(cos(radians(:lat)) * cos(radians(c.lat)) * " +
+                   "cos(radians(c.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(c.lat)))) <= :radius " +
+                   "ORDER BY (6371 * acos(cos(radians(:lat)) * cos(radians(c.lat)) * " +
+                   "cos(radians(c.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(c.lat)))) ASC", 
+           nativeQuery = true)
+    List<Customer> findNearbyCustomers(@Param("lat") Double lat, 
+                                     @Param("lng") Double lng, 
+                                     @Param("radius") Double radius);
 }

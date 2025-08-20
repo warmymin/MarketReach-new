@@ -25,9 +25,9 @@ public class Delivery {
     private UUID id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "targeting_id", nullable = false)
-    @JsonBackReference("targeting-deliveries")
-    private Targeting targeting;
+    @JoinColumn(name = "targeting_location_id", nullable = true)
+    @JsonBackReference("targeting-location-deliveries")
+    private TargetingLocation targetingLocation;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -51,9 +51,9 @@ public class Delivery {
         this.createdAt = LocalDateTime.now();
     }
     
-    public Delivery(Targeting targeting) {
+    public Delivery(TargetingLocation targetingLocation) {
         this();
-        this.targeting = targeting;
+        this.targetingLocation = targetingLocation;
     }
     
     // Getter와 Setter
@@ -65,12 +65,12 @@ public class Delivery {
         this.id = id;
     }
     
-    public Targeting getTargeting() {
-        return targeting;
+    public TargetingLocation getTargetingLocation() {
+        return targetingLocation;
     }
     
-    public void setTargeting(Targeting targeting) {
-        this.targeting = targeting;
+    public void setTargetingLocation(TargetingLocation targetingLocation) {
+        this.targetingLocation = targetingLocation;
     }
     
     public DeliveryStatus getStatus() {
@@ -135,7 +135,7 @@ public class Delivery {
     public String toString() {
         return "Delivery{" +
                 "id=" + id +
-                ", targeting=" + (targeting != null ? targeting.getId() : "null") +
+                ", targetingLocation=" + (targetingLocation != null ? targetingLocation.getId() : "null") +
                 ", status=" + status +
                 ", errorCode='" + errorCode + '\'' +
                 ", deliveredAt=" + deliveredAt +

@@ -73,6 +73,39 @@ public class CustomerService {
         return customerRepository.countCustomersWithinRadius(lat, lng, radius, companyId);
     }
 
+    // 새로운 위치 기반 고객 조회 메서드
+    public List<Customer> getNearbyCustomers(Double lat, Double lng, Double radius) {
+        return customerRepository.findNearbyCustomers(lat, lng, radius);
+    }
+
+    // UUID 문자열로 고객 조회
+    public Customer getCustomerById(String id) {
+        try {
+            UUID uuid = UUID.fromString(id);
+            Optional<Customer> customer = customerRepository.findById(uuid);
+            return customer.orElseThrow(() -> new IllegalArgumentException("고객을 찾을 수 없습니다: " + id));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("잘못된 고객 ID 형식입니다: " + id);
+        }
+    }
+
+    // UUID 문자열로 고객 업데이트
+    public Customer updateCustomer(String id, Customer customer) {
+        Customer existingCustomer = getCustomerById(id);
+        existingCustomer.setName(customer.getName());
+        existingCustomer.setPhone(customer.getPhone());
+        existingCustomer.setLat(customer.getLat());
+        existingCustomer.setLng(customer.getLng());
+        existingCustomer.setDongCode(customer.getDongCode());
+        return customerRepository.save(existingCustomer);
+    }
+
+    // UUID 문자열로 고객 삭제
+    public void deleteCustomer(String id) {
+        Customer customer = getCustomerById(id);
+        customerRepository.delete(customer);
+    }
+
     /**
      * CSV 파일로 고객 데이터 업로드
      */

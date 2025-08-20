@@ -12,7 +12,7 @@ const TargetingLocation = () => {
   const radiusM = 1000;
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async () => {ㄴ
       setLoading(true);
       const locs = await apiService.getTargetingLocations();
       setLocations(locs);

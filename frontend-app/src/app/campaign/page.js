@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, MapPin, Send, BarChart3, Calendar, Settings } from 'lucide-react';
 // import apiService from '@/lib/api'; // Next.js에서는 lib/api.js로 이동 예정
