@@ -60,10 +60,10 @@ export default function TargetingPage() {
   return (
     <div className="page-content">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">위치 기반 타겟팅 관리</h1>
-          <p className="page-subtitle">지역 기반 고객 타겟팅을 관리하세요</p>
-        </div>
+                  <div>
+            <h1 className="page-title">🎯 위치 기반 타겟팅 관리</h1>
+            <p className="page-subtitle">지역 기반 고객 타겟팅을 관리하세요</p>
+          </div>
       </div>
       <div className="card">
         <div className="card-header">
@@ -131,7 +131,7 @@ export default function TargetingPage() {
                           <Calendar size={14} />
                           {targeting.createdAt ? 
                             (typeof targeting.createdAt === 'string' ? 
-                              targeting.createdAt.split('T')[0] : 
+                              targeting.createdAt.split(' ')[0] : 
                               new Date(targeting.createdAt).toISOString().split('T')[0]
                             ) : ''
                           }

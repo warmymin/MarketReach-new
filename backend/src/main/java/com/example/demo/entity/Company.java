@@ -27,6 +27,18 @@ public class Company {
     @Column
     private String industry;
     
+    @Column(name = "business_number")
+    private String businessNumber;
+    
+    @Column
+    private String address;
+    
+    @Column
+    private String phone;
+    
+    @Column
+    private String email;
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
@@ -72,6 +84,38 @@ public class Company {
     
     public void setIndustry(String industry) {
         this.industry = industry;
+    }
+    
+    public String getBusinessNumber() {
+        return businessNumber;
+    }
+    
+    public void setBusinessNumber(String businessNumber) {
+        this.businessNumber = businessNumber;
+    }
+    
+    public String getAddress() {
+        return address;
+    }
+    
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    
+    public String getPhone() {
+        return phone;
+    }
+    
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
     }
     
     public LocalDateTime getCreatedAt() {

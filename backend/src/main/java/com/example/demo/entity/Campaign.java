@@ -27,18 +27,16 @@ public class Campaign {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
     
-    @Column(nullable = false)
-    private Double lat;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "targeting_location_id")
+    @JsonBackReference("targeting-location-campaigns")
+    private TargetingLocation targetingLocation;
     
-    @Column(nullable = false)
-    private Double lng;
+    @Column(columnDefinition = "TEXT")
+    private String description;
     
-    @Column(nullable = false)
-    private Integer radius;
-    
-    @Column(name = "scheduled_at")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime scheduledAt;
+    @Column
+    private String status = "DRAFT";
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
@@ -57,18 +55,19 @@ public class Campaign {
     @Transient
     private UUID companyId;
     
+    @Transient
+    private UUID targetingLocationId;
+    
     // 생성자
     public Campaign() {
         this.createdAt = LocalDateTime.now();
     }
     
-    public Campaign(String name, String message, Double lat, Double lng, Integer radius) {
+    public Campaign(String name, String message, TargetingLocation targetingLocation) {
         this();
         this.name = name;
         this.message = message;
-        this.lat = lat;
-        this.lng = lng;
-        this.radius = radius;
+        this.targetingLocation = targetingLocation;
     }
     
     // Getter와 Setter
@@ -96,36 +95,39 @@ public class Campaign {
         this.message = message;
     }
     
-    public Double getLat() {
-        return lat;
+    public TargetingLocation getTargetingLocation() {
+        return targetingLocation;
     }
     
-    public void setLat(Double lat) {
-        this.lat = lat;
+    public void setTargetingLocation(TargetingLocation targetingLocation) {
+        this.targetingLocation = targetingLocation;
+        if (targetingLocation != null) {
+            this.targetingLocationId = targetingLocation.getId();
+        }
     }
     
-    public Double getLng() {
-        return lng;
+    public UUID getTargetingLocationId() {
+        return targetingLocationId;
     }
     
-    public void setLng(Double lng) {
-        this.lng = lng;
+    public void setTargetingLocationId(UUID targetingLocationId) {
+        this.targetingLocationId = targetingLocationId;
     }
     
-    public Integer getRadius() {
-        return radius;
+    public String getDescription() {
+        return description;
     }
     
-    public void setRadius(Integer radius) {
-        this.radius = radius;
+    public void setDescription(String description) {
+        this.description = description;
     }
     
-    public LocalDateTime getScheduledAt() {
-        return scheduledAt;
+    public String getStatus() {
+        return status;
     }
     
-    public void setScheduledAt(LocalDateTime scheduledAt) {
-        this.scheduledAt = scheduledAt;
+    public void setStatus(String status) {
+        this.status = status;
     }
     
     public Company getCompany() {
@@ -177,10 +179,8 @@ public class Campaign {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", message='" + message + '\'' +
-                ", lat=" + lat +
-                ", lng=" + lng +
-                ", radius=" + radius +
-                ", scheduledAt=" + scheduledAt +
+                ", targetingLocation=" + (targetingLocation != null ? targetingLocation.getName() : "null") +
+                ", status='" + status + '\'' +
                 ", company=" + (company != null ? company.getName() : "null") +
                 ", createdAt=" + createdAt +
                 '}';

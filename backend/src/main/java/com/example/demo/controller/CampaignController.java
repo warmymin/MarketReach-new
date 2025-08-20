@@ -2,8 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Campaign;
 import com.example.demo.entity.Company;
+import com.example.demo.entity.TargetingLocation;
 import com.example.demo.service.CampaignService;
 import com.example.demo.service.CompanyService;
+import com.example.demo.service.TargetingLocationService;
+import com.example.demo.service.DeliveryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.time.LocalDateTime;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -28,20 +32,41 @@ public class CampaignController {
     
     @Autowired
     private CompanyService companyService;
+    
+    @Autowired
+    private TargetingLocationService targetingLocationService;
+    
+    @Autowired
+    private DeliveryService deliveryService;
 
     // 1) 캠페인 생성
     @PostMapping
-    public ResponseEntity<?> createCampaign(@RequestBody Campaign campaign) {
+    public ResponseEntity<?> createCampaign(@RequestBody Map<String, Object> requestData) {
         try {
-            // Company 설정
-            if (campaign.getCompany() == null && campaign.getCompanyId() != null) {
-                Optional<Company> company = companyService.getCompanyById(campaign.getCompanyId());
-                if (company.isPresent()) {
-                    campaign.setCompany(company.get());
+            System.out.println("=== 캠페인 생성 요청 시작 ===");
+            System.out.println("받은 데이터: " + requestData);
+            
+            // Map에서 Campaign 객체 생성
+            Campaign campaign = new Campaign();
+            campaign.setName((String) requestData.get("name"));
+            campaign.setMessage((String) requestData.get("message"));
+            campaign.setStatus("DRAFT"); // 기본 상태
+            
+            // Company 설정 (첫 번째 회사 사용)
+            Company defaultCompany = new Company();
+            defaultCompany.setId(UUID.fromString("55006cf8-2322-4901-b76c-e7f2fd83ed94"));
+            campaign.setCompany(defaultCompany);
+            
+            // TargetingLocation 설정
+            if (requestData.get("targetingLocationId") != null) {
+                UUID targetingId = UUID.fromString((String) requestData.get("targetingLocationId"));
+                Optional<TargetingLocation> targetingLocation = targetingLocationService.getTargetingLocationById(targetingId);
+                if (targetingLocation.isPresent()) {
+                    campaign.setTargetingLocation(targetingLocation.get());
                 } else {
                     Map<String, Object> response = new HashMap<>();
                     response.put("success", false);
-                    response.put("message", "회사를 찾을 수 없습니다.");
+                    response.put("message", "타겟팅 위치를 찾을 수 없습니다.");
                     return ResponseEntity.badRequest().body(response);
                 }
             }
@@ -173,5 +198,23 @@ public class CampaignController {
         boolean deleted = campaignService.deleteCampaign(id);
         if (!deleted) throw new ResponseStatusException(NOT_FOUND, "캠페인을 찾을 수 없습니다.");
         return ResponseEntity.ok(Map.of("success", true, "message", "캠페인이 성공적으로 삭제되었습니다."));
+    }
+    
+    // 12) 캠페인 발송 시뮬레이션
+    @PostMapping("/{id}/send")
+    public ResponseEntity<?> sendCampaign(@PathVariable UUID id) {
+        try {
+            Map<String, Object> result = deliveryService.simulateCampaignDelivery(id);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "캠페인 발송이 완료되었습니다.",
+                "data", result
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "캠페인 발송 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
     }
 }

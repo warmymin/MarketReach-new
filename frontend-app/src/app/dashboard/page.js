@@ -67,99 +67,116 @@ export default function Dashboard() {
   return (
     <div className="page-content">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">대시보드</h1>
-          <p className="page-subtitle">마케팅 캠페인 현황을 한눈에 확인하세요</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title">🎯 마케팅 대시보드</h1>
+            <p className="page-subtitle">위치 기반 마케팅 캠페인 현황을 한눈에 확인하세요</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCreateDummyData}
+              className="btn btn-secondary"
+            >
+              📊 더미 데이터 생성
+            </button>
+          </div>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={handleCreateDummyData}
-        >
-          <Plus size={16} />
-          더미 데이터 생성
-        </button>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-4">
-        <div className="card">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
             <div className="metric">
-              <div className="metric-value">{statistics.companies}</div>
-              <div className="metric-label">등록된 회사</div>
+              <div className="metric-value text-4xl font-bold text-blue-600">{statistics.companies}</div>
+              <div className="metric-label text-gray-600 font-medium">🏢 등록된 회사</div>
             </div>
-            <Building2 size={24} className="text-blue-500" />
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Building2 size={28} className="text-blue-600" />
+            </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
             <div className="metric">
-              <div className="metric-value">{statistics.customers}</div>
-              <div className="metric-label">등록된 고객</div>
+              <div className="metric-value text-4xl font-bold text-green-600">{statistics.customers}</div>
+              <div className="metric-label text-gray-600 font-medium">👥 등록된 고객</div>
             </div>
-            <Users size={24} className="text-green-500" />
+            <div className="p-3 bg-green-100 rounded-full">
+              <Users size={28} className="text-green-600" />
+            </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
             <div className="metric">
-              <div className="metric-value">{statistics.campaigns}</div>
-              <div className="metric-label">진행 중인 캠페인</div>
+              <div className="metric-value text-4xl font-bold text-purple-600">{statistics.campaigns}</div>
+              <div className="metric-label text-gray-600 font-medium">🎯 진행 중인 캠페인</div>
             </div>
-            <Target size={24} className="text-purple-500" />
+            <div className="p-3 bg-purple-100 rounded-full">
+              <Target size={28} className="text-purple-600" />
+            </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
             <div className="metric">
-              <div className="metric-value">{statistics.targetingLocations}</div>
-              <div className="metric-label">위치 기반 타겟팅</div>
+              <div className="metric-value text-4xl font-bold text-red-600">{statistics.targetingLocations || 0}</div>
+              <div className="metric-label text-gray-600 font-medium">📍 타겟팅 위치</div>
             </div>
-            <MapPin size={24} className="text-orange-500" />
+            <div className="p-3 bg-red-100 rounded-full">
+              <MapPin size={28} className="text-red-600" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* 배송 현황 */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="card">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
-            <h2 className="card-title">배송 현황</h2>
-            <Send size={20} className="text-blue-500" />
+            <h2 className="card-title">📤 배송 현황</h2>
+            <div className="p-3 bg-blue-100 rounded-full">
+              <Send size={24} className="text-blue-600" />
+            </div>
           </div>
-          <div className="p-6">
+          <div className="p-8 text-center">
             <div className="metric">
-              <div className="metric-value">{statistics.deliveries}</div>
-              <div className="metric-label">총 발송 건수</div>
+              <div className="metric-value text-5xl font-bold text-blue-600 mb-2">{statistics.deliveries}</div>
+              <div className="metric-label text-gray-600 font-medium text-lg">총 발송 건수</div>
             </div>
           </div>
         </div>
 
-        <div className="card">
+        <div className="card transform hover:scale-105 transition-transform duration-300">
           <div className="card-header">
-            <h2 className="card-title">성공률</h2>
-            <TrendingUp size={20} className="text-green-500" />
+            <h2 className="card-title">📈 성공률</h2>
+            <div className="p-3 bg-green-100 rounded-full">
+              <TrendingUp size={24} className="text-green-600" />
+            </div>
           </div>
-          <div className="p-6">
+          <div className="p-8 text-center">
             <div className="metric">
-              <div className="metric-value">{statistics.successRate}%</div>
-              <div className="metric-label">배송 성공률</div>
+              <div className="metric-value text-5xl font-bold text-green-600 mb-2">{statistics.successRate}%</div>
+              <div className="metric-label text-gray-600 font-medium text-lg">배송 성공률</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* 최근 활동 */}
-      <div className="card">
+      <div className="card transform hover:scale-105 transition-transform duration-300">
         <div className="card-header">
-          <h2 className="card-title">최근 활동</h2>
+          <h2 className="card-title">📋 최근 활동</h2>
         </div>
-        <div className="p-6">
-          <div className="text-center text-gray-500">
-            <p>최근 활동 내역이 여기에 표시됩니다.</p>
+        <div className="p-8">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">시스템이 정상 작동 중입니다!</h3>
+            <p className="text-gray-500">최근 활동 내역이 여기에 표시됩니다.</p>
           </div>
         </div>
       </div>

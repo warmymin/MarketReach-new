@@ -15,7 +15,7 @@ import java.util.UUID;
 public class Delivery {
     
     public enum DeliveryStatus {
-        SUCCESS, FAIL, PENDING
+        PENDING, SENT, FAILED
     }
     
     @Id
@@ -25,9 +25,17 @@ public class Delivery {
     private UUID id;
     
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    @JsonBackReference("customer-deliveries")
+    private Customer customer;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "targeting_location_id", nullable = true)
     @JsonBackReference("targeting-location-deliveries")
     private TargetingLocation targetingLocation;
+    
+    @Column(columnDefinition = "TEXT")
+    private String message;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -36,8 +44,8 @@ public class Delivery {
     @Column(name = "error_code")
     private String errorCode;
     
-    @Column(name = "delivered_at")
-    private LocalDateTime deliveredAt;
+    @Column(name = "sent_at")
+    private LocalDateTime sentAt;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -65,12 +73,28 @@ public class Delivery {
         this.id = id;
     }
     
+    public Customer getCustomer() {
+        return customer;
+    }
+    
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+    
     public TargetingLocation getTargetingLocation() {
         return targetingLocation;
     }
     
     public void setTargetingLocation(TargetingLocation targetingLocation) {
         this.targetingLocation = targetingLocation;
+    }
+    
+    public String getMessage() {
+        return message;
+    }
+    
+    public void setMessage(String message) {
+        this.message = message;
     }
     
     public DeliveryStatus getStatus() {
@@ -89,12 +113,12 @@ public class Delivery {
         this.errorCode = errorCode;
     }
     
-    public LocalDateTime getDeliveredAt() {
-        return deliveredAt;
+    public LocalDateTime getSentAt() {
+        return sentAt;
     }
     
-    public void setDeliveredAt(LocalDateTime deliveredAt) {
-        this.deliveredAt = deliveredAt;
+    public void setSentAt(LocalDateTime sentAt) {
+        this.sentAt = sentAt;
     }
     
     public LocalDateTime getCreatedAt() {
@@ -119,16 +143,16 @@ public class Delivery {
         qrEvent.setDelivery(this);
     }
     
-    public void markAsSuccess() {
-        this.status = DeliveryStatus.SUCCESS;
-        this.deliveredAt = LocalDateTime.now();
+    public void markAsSent() {
+        this.status = DeliveryStatus.SENT;
+        this.sentAt = LocalDateTime.now();
         this.errorCode = null;
     }
     
     public void markAsFailed(String errorCode) {
-        this.status = DeliveryStatus.FAIL;
+        this.status = DeliveryStatus.FAILED;
         this.errorCode = errorCode;
-        this.deliveredAt = null;
+        this.sentAt = null;
     }
     
     @Override
@@ -138,7 +162,7 @@ public class Delivery {
                 ", targetingLocation=" + (targetingLocation != null ? targetingLocation.getId() : "null") +
                 ", status=" + status +
                 ", errorCode='" + errorCode + '\'' +
-                ", deliveredAt=" + deliveredAt +
+                ", sentAt=" + sentAt +
                 ", createdAt=" + createdAt +
                 '}';
     }

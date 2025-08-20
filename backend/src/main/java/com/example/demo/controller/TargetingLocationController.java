@@ -35,20 +35,24 @@ public class TargetingLocationController {
     }
     
     // 타겟팅 위치 생성
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> createTargetingLocation(@RequestBody TargetingLocation targetingLocation) {
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> createTargetingLocation(@RequestBody Map<String, Object> requestData) {
         try {
             System.out.println("=== 타겟팅 위치 생성 요청 시작 ===");
-            System.out.println("받은 데이터: " + targetingLocation);
-            System.out.println("Content-Type 확인 필요");
+            System.out.println("받은 데이터: " + requestData);
             
-            // 회사 정보가 없으면 기본 회사 설정
-            if (targetingLocation.getCompany() == null) {
-                // 기본 회사 ID 설정 (실제 존재하는 회사 ID로 변경 필요)
-                Company defaultCompany = new Company();
-                defaultCompany.setId(UUID.fromString("a844e499-59f2-44de-9d44-178dba113d37"));
-                targetingLocation.setCompany(defaultCompany);
-            }
+            // Map에서 TargetingLocation 객체 생성
+            TargetingLocation targetingLocation = new TargetingLocation();
+            targetingLocation.setName((String) requestData.get("name"));
+            targetingLocation.setCenterLat((Double) requestData.get("centerLat"));
+            targetingLocation.setCenterLng((Double) requestData.get("centerLng"));
+            targetingLocation.setRadiusM((Integer) requestData.get("radiusM"));
+            targetingLocation.setMemo((String) requestData.get("memo"));
+            
+            // 회사 정보 설정 (첫 번째 회사 사용)
+            Company defaultCompany = new Company();
+            defaultCompany.setId(UUID.fromString("55006cf8-2322-4901-b76c-e7f2fd83ed94"));
+            targetingLocation.setCompany(defaultCompany);
             
             TargetingLocation created = targetingLocationService.createTargetingLocation(targetingLocation);
             
@@ -152,8 +156,20 @@ public class TargetingLocationController {
     
     // 타겟팅 위치 수정
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateTargetingLocation(@PathVariable UUID id, @RequestBody TargetingLocation targetingLocation) {
+    public ResponseEntity<Map<String, Object>> updateTargetingLocation(@PathVariable UUID id, @RequestBody Map<String, Object> requestData) {
         try {
+            System.out.println("=== 타겟팅 위치 수정 요청 시작 ===");
+            System.out.println("ID: " + id);
+            System.out.println("받은 데이터: " + requestData);
+            
+            // Map에서 TargetingLocation 객체 생성
+            TargetingLocation targetingLocation = new TargetingLocation();
+            targetingLocation.setName((String) requestData.get("name"));
+            targetingLocation.setCenterLat((Double) requestData.get("centerLat"));
+            targetingLocation.setCenterLng((Double) requestData.get("centerLng"));
+            targetingLocation.setRadiusM((Integer) requestData.get("radiusM"));
+            targetingLocation.setMemo((String) requestData.get("memo"));
+            
             TargetingLocation updated = targetingLocationService.updateTargetingLocation(id, targetingLocation);
             
             Map<String, Object> response = new HashMap<>();
@@ -163,6 +179,8 @@ public class TargetingLocationController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.out.println("오류 발생: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "타겟팅 위치 수정 실패: " + e.getMessage());

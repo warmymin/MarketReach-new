@@ -17,9 +17,9 @@ const Sidebar = () => {
 
   const menuItems = [
     { path: '/dashboard', icon: Home, label: '대시보드' },
-    { path: '/campaign', icon: Target, label: '캠페인' },
+    { path: '/campaigns', icon: Target, label: '캠페인' },
     { path: '/targeting', icon: MapPin, label: '타겟팅' },
-    { path: '/delivery-status', icon: Send, label: '발송 현황' },
+    { path: '/delivery-monitor', icon: Send, label: '발송 모니터링' },
     { path: '/analysis', icon: BarChart3, label: '분석' },
     { path: '/customer', icon: Users, label: '고객' },
     { path: '/settings', icon: Settings, label: '설정' },

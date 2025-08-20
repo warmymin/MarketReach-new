@@ -1,8 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.entity.Delivery;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.example.demo.entity.Delivery.DeliveryStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,37 +14,40 @@ import java.util.UUID;
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     
-    /**
-     * 위치 기반 타겟팅별 배송 조회
-     */
-    List<Delivery> findByTargetingLocationId(UUID targetingLocationId);
+    // 캠페인별 발송 목록 조회
+    List<Delivery> findByTargetingLocationIdOrderByCreatedAtDesc(UUID targetingLocationId);
     
-    /**
-     * 회사별 배송 조회
-     */
-    @Query(value = "SELECT d.* FROM deliveries d " +
-                   "JOIN targeting_locations tl ON d.targeting_location_id = tl.id " +
-                   "WHERE tl.company_id = :companyId", 
-           nativeQuery = true)
-    List<Delivery> findByCompanyId(@Param("companyId") UUID companyId);
+    // 상태별 발송 목록 조회
+    List<Delivery> findByStatusOrderByCreatedAtDesc(DeliveryStatus status);
     
-    /**
-     * 상태별 배송 조회
-     */
-    List<Delivery> findByStatus(Delivery.DeliveryStatus status);
+    // 특정 시간 범위 내 발송 목록 조회
+    @Query("SELECT d FROM Delivery d WHERE d.createdAt BETWEEN :startTime AND :endTime ORDER BY d.createdAt DESC")
+    List<Delivery> findByCreatedAtBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
     
-    /**
-     * 특정 기간 내 배송 조회
-     */
-    List<Delivery> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+    // 상태별 발송 건수 조회
+    long countByStatus(DeliveryStatus status);
     
-    /**
-     * 배송 완료된 배송 조회
-     */
-    List<Delivery> findByDeliveredAtIsNotNull();
+    // 캠페인별 상태별 발송 건수 조회
+    long countByTargetingLocationIdAndStatus(UUID targetingLocationId, DeliveryStatus status);
     
-    /**
-     * 배송 실패한 배송 조회
-     */
-    List<Delivery> findByStatusAndErrorCodeIsNotNull(Delivery.DeliveryStatus status);
+    // 오늘 발송된 건수 조회
+    @Query("SELECT COUNT(d) FROM Delivery d WHERE DATE(d.createdAt) = CURRENT_DATE")
+    long countTodayDeliveries();
+    
+    // 시간대별 발송 건수 조회 (오늘)
+    @Query("SELECT HOUR(d.createdAt) as hour, COUNT(d) as count FROM Delivery d " +
+           "WHERE DATE(d.createdAt) = CURRENT_DATE " +
+           "GROUP BY HOUR(d.createdAt) ORDER BY hour")
+    List<Object[]> getHourlyDeliveryStats();
+    
+    // 최근 30분간 5분 단위 발송 통계
+    @Query("SELECT " +
+           "FLOOR(MINUTE(d.createdAt) / 5) * 5 as timeSlot, " +
+           "d.status, " +
+           "COUNT(d) as count " +
+           "FROM Delivery d " +
+           "WHERE d.createdAt >= :startTime " +
+           "GROUP BY FLOOR(MINUTE(d.createdAt) / 5) * 5, d.status " +
+           "ORDER BY timeSlot, d.status")
+    List<Object[]> getRealtimeDeliveryStats(@Param("startTime") LocalDateTime startTime);
 }

@@ -2,15 +2,14 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8083/api';
 
-// Axios 인스턴스 생성
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// API 서비스 클래스
 class ApiService {
   // 회사 관련 API
   async getCompanies() {
@@ -20,6 +19,16 @@ class ApiService {
     } catch (error) {
       console.error('회사 목록 조회 실패:', error);
       return [];
+    }
+  }
+
+  async createCompany(companyData) {
+    try {
+      const response = await apiClient.post('/companies', companyData);
+      return response.data;
+    } catch (error) {
+      console.error('회사 생성 실패:', error);
+      throw error;
     }
   }
 
@@ -34,48 +43,15 @@ class ApiService {
     }
   }
 
-  // 캠페인 관련 API
-  async getCampaigns() {
+  async createCustomer(customerData) {
     try {
-      const response = await apiClient.get('/campaigns');
-      return response.data.data || [];
+      const response = await apiClient.post('/customers', customerData);
+      return response.data;
     } catch (error) {
-      console.error('캠페인 목록 조회 실패:', error);
-      return [];
+      console.error('고객 생성 실패:', error);
+      throw error;
     }
   }
-
-  async createCampaign(campaign) {
-    try {
-      const response = await apiClient.post('/campaigns', campaign);
-      return response.data.data;
-    } catch (error) {
-      console.error('캠페인 생성 실패:', error);
-      return null;
-    }
-  }
-
-  async updateCampaign(id, campaign) {
-    try {
-      const response = await apiClient.put(`/campaigns/${id}`, campaign);
-      return response.data.data;
-    } catch (error) {
-      console.error('캠페인 수정 실패:', error);
-      return null;
-    }
-  }
-
-  async deleteCampaign(id) {
-    try {
-      await apiClient.delete(`/campaigns/${id}`);
-      return true;
-    } catch (error) {
-      console.error('캠페인 삭제 실패:', error);
-      return false;
-    }
-  }
-
-
 
   // 타겟팅 위치 관련 API
   async getTargetingLocations() {
@@ -88,12 +64,19 @@ class ApiService {
     }
   }
 
+  async getTargetingLocationById(id) {
+    try {
+      const response = await apiClient.get(`/targeting-locations/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('타겟팅 위치 조회 실패:', error);
+      return null;
+    }
+  }
+
   async createTargetingLocation(targetingLocation) {
     try {
-      console.log('API 호출 - 타겟팅 위치 생성:', targetingLocation);
-      
-      // fetch를 사용하여 직접 요청
-      const response = await fetch('http://localhost:8083/api/targeting-locations', {
+      const response = await fetch(`${API_BASE_URL}/targeting-locations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,6 +93,29 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('타겟팅 위치 생성 실패:', error);
+      throw error;
+    }
+  }
+
+  async updateTargetingLocation(id, targetingLocation) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/targeting-locations/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(targetingLocation)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API 응답:', data);
+      return data;
+    } catch (error) {
+      console.error('타겟팅 위치 수정 실패:', error);
       throw error;
     }
   }
@@ -161,6 +167,58 @@ class ApiService {
     }
   }
 
+  // 캠페인 관련 API
+  async createCampaign(campaignData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/campaigns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(campaignData),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('캠페인 생성 실패:', error);
+      throw error;
+    }
+  }
+
+  async getCampaigns() {
+    try {
+      const response = await apiClient.get('/campaigns');
+      return response.data.data;
+    } catch (error) {
+      console.error('캠페인 목록 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  async sendCampaign(campaignId) {
+    try {
+      const response = await apiClient.post(`/campaigns/${campaignId}/send`);
+      return response.data;
+    } catch (error) {
+      console.error('캠페인 발송 실패:', error);
+      throw error;
+    }
+  }
+
+  async deleteCampaign(id) {
+    try {
+      const response = await apiClient.delete(`/campaigns/${id}`);
+      return response.data.success;
+    } catch (error) {
+      console.error('캠페인 삭제 실패:', error);
+      throw error;
+    }
+  }
+
   // 배송 관련 API
   async getDeliveries() {
     try {
@@ -168,6 +226,61 @@ class ApiService {
       return response.data.data || [];
     } catch (error) {
       console.error('배송 목록 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 발송 통계 API
+  async getDeliverySummary() {
+    try {
+      const response = await apiClient.get('/deliveries/stats/summary');
+      return response.data;
+    } catch (error) {
+      console.error('발송 통계 조회 실패:', error);
+      return null;
+    }
+  }
+
+  // 실시간 발송 통계 API
+  async getRealtimeStats() {
+    try {
+      const response = await apiClient.get('/deliveries/stats/realtime');
+      return response.data;
+    } catch (error) {
+      console.error('실시간 통계 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 시간대별 발송 통계 API
+  async getHourlyStats() {
+    try {
+      const response = await apiClient.get('/deliveries/stats/hourly');
+      return response.data;
+    } catch (error) {
+      console.error('시간대별 통계 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 캠페인별 발송 목록 API
+  async getDeliveriesByCampaign(campaignId) {
+    try {
+      const response = await apiClient.get(`/deliveries/campaign/${campaignId}`);
+      return response.data;
+    } catch (error) {
+      console.error('캠페인별 발송 목록 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 상태별 발송 목록 API
+  async getDeliveriesByStatus(status) {
+    try {
+      const response = await apiClient.get(`/deliveries/status/${status}`);
+      return response.data;
+    } catch (error) {
+      console.error('상태별 발송 목록 조회 실패:', error);
       return [];
     }
   }

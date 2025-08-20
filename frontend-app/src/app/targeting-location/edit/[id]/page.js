@@ -1,11 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Users, Target, Save, ArrowLeft } from 'lucide-react';
+import { MapPin, Users, Target, Save, ArrowLeft, Loader } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 
-export default function TargetingLocationPage() {
+export default function EditTargetingLocationPage() {
+  const params = useParams();
+  const router = useRouter();
+  const targetingId = params.id;
+
   const [formData, setFormData] = useState({
     name: '',
     location: '강남역',
@@ -17,6 +22,7 @@ export default function TargetingLocationPage() {
 
   const [estimatedReach, setEstimatedReach] = useState('계산 중...');
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [nearbyCustomers, setNearbyCustomers] = useState([]);
   const [showCustomerList, setShowCustomerList] = useState(false);
 
@@ -29,6 +35,50 @@ export default function TargetingLocationPage() {
     { name: '잠실', lat: 37.5139, lng: 127.1006 },
     { name: '건대입구', lat: 37.5407, lng: 127.0692 },
   ];
+
+  // 기존 타겟팅 데이터 로드
+  useEffect(() => {
+    async function loadTargetingData() {
+      try {
+        setIsLoading(true);
+        const targetingData = await apiService.getTargetingLocationById(targetingId);
+        
+        if (targetingData) {
+          // 가장 가까운 위치 옵션 찾기
+          const closestLocation = locationOptions.reduce((closest, option) => {
+            const currentDistance = Math.sqrt(
+              Math.pow(option.lat - targetingData.centerLat, 2) + 
+              Math.pow(option.lng - targetingData.centerLng, 2)
+            );
+            const closestDistance = Math.sqrt(
+              Math.pow(closest.lat - targetingData.centerLat, 2) + 
+              Math.pow(closest.lng - targetingData.centerLng, 2)
+            );
+            return currentDistance < closestDistance ? option : closest;
+          });
+
+          setFormData({
+            name: targetingData.name,
+            location: closestLocation.name,
+            centerLat: targetingData.centerLat,
+            centerLng: targetingData.centerLng,
+            radiusKm: targetingData.radiusM / 1000,
+            memo: targetingData.memo || ''
+          });
+        }
+      } catch (error) {
+        console.error('타겟팅 데이터 로드 오류:', error);
+        alert('타겟팅 데이터를 불러올 수 없습니다.');
+        router.push('/targeting');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (targetingId) {
+      loadTargetingData();
+    }
+  }, [targetingId, router]);
 
   // 위치 변경 시 위도/경도 업데이트
   const handleLocationChange = (locationName) => {
@@ -45,10 +95,10 @@ export default function TargetingLocationPage() {
 
   // 반경 변경 시 예상 도달 고객 수 계산
   useEffect(() => {
-    if (formData.centerLat && formData.centerLng && formData.radiusKm) {
+    if (formData.centerLat && formData.centerLng && formData.radiusKm && !isLoading) {
       calculateEstimatedReach();
     }
-  }, [formData.centerLat, formData.centerLng, formData.radiusKm]);
+  }, [formData.centerLat, formData.centerLng, formData.radiusKm, isLoading]);
 
   // 예상 도달 고객 수 계산
   const calculateEstimatedReach = async () => {
@@ -96,23 +146,15 @@ export default function TargetingLocationPage() {
     }
   };
 
-  // 타겟팅 위치 생성
-  const handleCreateTargeting = async () => {
+  // 타겟팅 위치 수정
+  const handleUpdateTargeting = async () => {
     if (!formData.name.trim()) {
       alert('타겟팅 이름을 입력해주세요.');
       return;
     }
 
     try {
-      console.log('타겟팅 위치 생성 시작:', formData);
-
-      // 먼저 API 연결 테스트
-      try {
-        const testResult = await fetch('http://localhost:8083/api/targeting-locations/test');
-        console.log('API 연결 테스트 결과:', testResult);
-      } catch (testError) {
-        console.error('API 연결 테스트 실패:', testError);
-      }
+      console.log('타겟팅 위치 수정 시작:', formData);
 
       const targetingData = {
         name: formData.name,
@@ -124,34 +166,33 @@ export default function TargetingLocationPage() {
 
       console.log('전송할 데이터:', JSON.stringify(targetingData, null, 2));
 
-      const result = await apiService.createTargetingLocation(targetingData);
+      const result = await apiService.updateTargetingLocation(targetingId, targetingData);
 
-      console.log('타겟팅 위치 생성 결과:', result);
+      console.log('타겟팅 위치 수정 결과:', result);
 
       if (result && result.success) {
-        alert('타겟팅 위치가 성공적으로 생성되었습니다!');
-        // 폼 초기화
-        setFormData({
-          name: '',
-          location: '강남역',
-          centerLat: 37.4980,
-          centerLng: 127.0276,
-          radiusKm: 2.0,
-          memo: ''
-        });
-        setEstimatedReach('계산 중...');
-        setNearbyCustomers([]);
-        
+        alert('타겟팅 위치가 성공적으로 수정되었습니다!');
         // 타겟팅 목록 페이지로 리다이렉트
-        window.location.href = '/targeting';
+        router.push('/targeting');
       } else {
-        alert('타겟팅 위치 생성에 실패했습니다.');
+        alert('타겟팅 위치 수정에 실패했습니다.');
       }
     } catch (error) {
-      console.error('타겟팅 위치 생성 오류:', error);
-      alert('타겟팅 위치 생성에 실패했습니다: ' + (error.response?.data?.message || error.message));
+      console.error('타겟팅 위치 수정 오류:', error);
+      alert('타겟팅 위치 수정에 실패했습니다: ' + (error.response?.data?.message || error.message));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="page-content">
+        <div className="flex items-center justify-center h-64">
+          <Loader className="animate-spin" size={32} />
+          <span className="ml-2">타겟팅 데이터를 불러오는 중...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-content">
@@ -162,8 +203,8 @@ export default function TargetingLocationPage() {
             뒤로가기
           </Link>
           <div>
-            <h1 className="page-title">📍 위치 타겟팅 생성</h1>
-            <p className="page-subtitle">지역 기반 고객 타겟팅을 생성하세요</p>
+            <h1 className="page-title">타겟팅 수정</h1>
+            <p className="page-subtitle">위치 기반 타겟팅을 수정하세요</p>
           </div>
         </div>
       </div>
@@ -234,12 +275,12 @@ export default function TargetingLocationPage() {
             </div>
 
             <button
-              onClick={handleCreateTargeting}
+              onClick={handleUpdateTargeting}
               disabled={!formData.name.trim() || isCalculating}
               className="btn btn-primary w-full"
             >
               <Save size={16} />
-              타겟팅 생성
+              타겟팅 수정
             </button>
           </div>
         </div>

@@ -62,9 +62,7 @@ public class CampaignService {
             Campaign existingCampaign = campaign.get();
             existingCampaign.setName(campaignDetails.getName());
             existingCampaign.setMessage(campaignDetails.getMessage());
-            existingCampaign.setLat(campaignDetails.getLat());
-            existingCampaign.setLng(campaignDetails.getLng());
-            existingCampaign.setRadius(campaignDetails.getRadius());
+            existingCampaign.setTargetingLocation(campaignDetails.getTargetingLocation());
             existingCampaign.setScheduledAt(campaignDetails.getScheduledAt());
             return campaignRepository.save(existingCampaign);
         }
@@ -90,8 +88,10 @@ public class CampaignService {
             Map<String, Object> result = new HashMap<>();
             result.put("campaign", c);
             result.put("estimatedCustomers", 0); // 임시 값
-            result.put("radius", c.getRadius());
-            result.put("center", Map.of("lat", c.getLat(), "lng", c.getLng()));
+            if (c.getTargetingLocation() != null) {
+                result.put("radius", c.getTargetingLocation().getRadiusM());
+                result.put("center", Map.of("lat", c.getTargetingLocation().getCenterLat(), "lng", c.getTargetingLocation().getCenterLng()));
+            }
             return result;
         }
         return null;
