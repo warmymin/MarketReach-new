@@ -26,66 +26,48 @@ import {
   Tooltip, 
   ResponsiveContainer,
   LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
+  Line
 } from 'recharts';
+import { motion } from 'framer-motion';
 import { apiService } from '@/lib/api';
 import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-// KPI 카드 컴포넌트
-const KpiCard = ({ title, value, change, icon: Icon, color, bgColor }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 transform hover:scale-[1.02] transition-transform duration-300">
-    <div className="flex items-center justify-between">
-      <div>
-        <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-gray-900">{value}</span>
-          {change !== undefined && (
-            <div className={`flex items-center gap-1 text-xs ${change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {change > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              <span>{Math.abs(change)}%</span>
+// 개선된 KPI 카드 컴포넌트
+const KpiCard = ({ title, value, icon: Icon, color, bgColor, gradient }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    whileHover={{ scale: 1.02, y: -5 }}
+  >
+    <Card className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+      <div className={`absolute inset-0 ${gradient} opacity-5`}></div>
+      <CardContent className="p-6 relative">
+        {/* 상단: 제목과 아이콘을 중앙 정렬 */}
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-xl ${bgColor} shadow-md`}>
+              <Icon size={24} className={color} />
             </div>
-          )}
+            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{title}</h3>
+          </div>
         </div>
-      </div>
-      <div className={`p-3 rounded-full ${bgColor}`}>
-        <Icon size={20} className={color} />
-      </div>
-    </div>
-  </div>
+        
+        {/* 하단: 값 강조 표시 */}
+        <div className="flex items-center justify-center">
+          <span className="text-7xl font-black text-gray-900 tracking-tight">{value}</span>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
 );
 
-// 탭 네비게이션 컴포넌트
-const TabNavigation = ({ activeTab, setActiveTab }) => {
-  const tabs = [
-    { id: 'realtime', label: '실시간 모니터링' },
-    { id: 'queue', label: '발송 대기열' },
-    { id: 'failed', label: '실패 관리' },
-    { id: 'stats', label: '통계' }
-  ];
-
-  return (
-    <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === tab.id 
-              ? 'bg-white shadow-sm text-blue-600' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-          onClick={() => setActiveTab(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-};
-
-// 실시간 라인 차트 컴포넌트
+// 실시간 라인 차트 컴포넌트 (Shadcn/ui Card 사용)
 const RealtimeLineChart = ({ data }) => {
   // 한국 시간 기준 현재 시간
   const now = new Date();
@@ -105,203 +87,172 @@ const RealtimeLineChart = ({ data }) => {
   const chartData = Array.isArray(data) && data.length > 0 ? data : defaultData;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">최근 30분간 메시지 발송 현황</h2>
-        <p className="text-sm text-gray-500">
-          실시간 발송 상태 모니터링 • 한국 시간: {koreaTime.toLocaleTimeString('ko-KR')}
-        </p>
-      </div>
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="time" 
-            stroke="#6b7280"
-            fontSize={12}
-          />
-          <YAxis 
-            stroke="#6b7280"
-            fontSize={12}
-            domain={[0, 180]}
-            ticks={[0, 45, 90, 135, 180]}
-          />
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="total" 
-            stroke="#3B82F6" 
-            strokeWidth={2}
-            dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-            name="총 발송"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="success" 
-            stroke="#10B981" 
-            strokeWidth={2}
-            dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
-            name="성공"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="failed" 
-            stroke="#EF4444" 
-            strokeWidth={2}
-            dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
-            name="실패"
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-8">
+          <CardTitle className="text-2xl font-bold text-gray-900 mb-3">📈 최근 30분간 메시지 발송 현황</CardTitle>
+          <CardDescription className="text-lg text-gray-600">
+            실시간 발송 상태 모니터링 • 한국 시간: {koreaTime.toLocaleTimeString('ko-KR')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="time" 
+                stroke="#6b7280"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                fontSize={12}
+                domain={[0, 180]}
+                ticks={[0, 45, 90, 135, 180]}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="total" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="success" 
+                stroke="#10b981" 
+                strokeWidth={3}
+                dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="failed" 
+                stroke="#ef4444" 
+                strokeWidth={3}
+                dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#ef4444', strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
-// 시간대별 막대 차트 컴포넌트
+// 시간대별 바 차트 컴포넌트 (Shadcn/ui Card 사용)
 const HourlyBarChart = ({ data }) => {
-  const COLORS = ['#10B981', '#EF4444'];
-  
   // 데이터 검증 및 기본값 설정
   const defaultData = [
-    { hour: '09:00', success: 380, failed: 80 },
-    { hour: '10:00', success: 580, failed: 100 },
-    { hour: '11:00', success: 620, failed: 120 },
-    { hour: '12:00', success: 780, failed: 140 },
-    { hour: '13:00', success: 550, failed: 80 },
-    { hour: '14:00', success: 520, failed: 60 }
+    { hour: '09:00', success: 45, failed: 5 },
+    { hour: '10:00', success: 78, failed: 12 },
+    { hour: '11:00', success: 92, failed: 8 },
+    { hour: '12:00', success: 156, failed: 24 },
+    { hour: '13:00', success: 134, failed: 16 },
+    { hour: '14:00', success: 189, failed: 21 },
+    { hour: '15:00', success: 167, failed: 13 },
+    { hour: '16:00', success: 145, failed: 15 },
+    { hour: '17:00', success: 123, failed: 17 },
+    { hour: '18:00', success: 98, failed: 12 }
   ];
   
   // data가 배열이고 길이가 0보다 큰지 확인
   const chartData = Array.isArray(data) && data.length > 0 ? data : defaultData;
-  
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">오늘 시간대별 발송 현황</h2>
-        <p className="text-sm text-gray-500">시간대별 성공/실패 통계</p>
-      </div>
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="hour" 
-            stroke="#6b7280"
-            fontSize={12}
-          />
-          <YAxis 
-            stroke="#6b7280"
-            fontSize={12}
-            domain={[0, 800]}
-            ticks={[0, 200, 400, 600, 800]}
-          />
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}
-          />
-          <Bar 
-            dataKey="success" 
-            fill={COLORS[0]} 
-            name="성공"
-            radius={[4, 4, 0, 0]}
-          />
-          <Bar 
-            dataKey="failed" 
-            fill={COLORS[1]} 
-            name="실패"
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-8">
+          <CardTitle className="text-2xl font-bold text-gray-900 mb-3">📊 오늘 시간대별 발송 현황</CardTitle>
+          <CardDescription className="text-lg text-gray-600">시간대별 성공/실패 통계</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="hour" 
+                stroke="#6b7280"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                fontSize={12}
+                domain={[0, 800]}
+                ticks={[0, 200, 400, 600, 800]}
+              />
+              <Tooltip 
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+              <Bar 
+                dataKey="success" 
+                fill="#10b981" 
+                radius={[4, 4, 0, 0]}
+                name="성공"
+              />
+              <Bar 
+                dataKey="failed" 
+                fill="#ef4444" 
+                radius={[4, 4, 0, 0]}
+                name="실패"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
-// 지역별 파이 차트 컴포넌트
-const RegionPieChart = ({ data }) => {
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-  
-  // 데이터 검증 및 기본값 설정
-  const defaultData = [
-    { name: '강남구', value: 29 },
-    { name: '서초구', value: 23 },
-    { name: '마포구', value: 18 },
-    { name: '종로구', value: 15 },
-    { name: '중구', value: 15 }
-  ];
-  
-  // data가 배열이고 길이가 0보다 큰지 확인
-  const chartData = Array.isArray(data) && data.length > 0 ? data : defaultData;
-  
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">지역별 고객 분포</h2>
-        <p className="text-sm text-gray-500">타겟 고객 지역 분포도</p>
-      </div>
-      <ResponsiveContainer width="100%" height={280}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            outerRadius={80}
-            fill="#8884d8"
-            dataKey="value"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip 
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-// 상태 배지 컴포넌트
+// 상태 배지 컴포넌트 (Shadcn/ui Badge 사용)
 const StatusBadge = ({ status }) => {
-  const getStatusStyle = (status) => {
+  const getStatusVariant = (status) => {
     switch (status) {
       case '진행중':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ACTIVE':
+        return 'default';
       case '완료':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'COMPLETED':
+        return 'secondary';
       case '대기':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'DRAFT':
+        return 'outline';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'secondary';
     }
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusStyle(status)}`}>
+    <Badge variant={getStatusVariant(status)} className="text-xs">
       {status}
-    </span>
+    </Badge>
   );
 };
 
-// 최근 캠페인 리스트 컴포넌트
+// 최근 캠페인 리스트 컴포넌트 (Shadcn/ui Card 사용)
 const RecentCampaignsList = ({ campaigns }) => {
   // 데이터 검증 및 기본값 설정
   const defaultData = [
@@ -314,46 +265,66 @@ const RecentCampaignsList = ({ campaigns }) => {
   const campaignData = Array.isArray(campaigns) && campaigns.length > 0 ? campaigns : defaultData;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">최근 캠페인</h2>
-          <p className="text-sm text-gray-500">진행 중이거나 최근 완료된 캠페인</p>
-        </div>
-        <Link href="/campaigns/new" className="btn btn-primary btn-sm">
-          <Plus size={16} />
-          새 캠페인 생성
-        </Link>
-      </div>
-      <div className="space-y-4">
-        {campaignData.length > 0 ? (
-          campaignData.map((campaign) => (
-            <div key={campaign.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Target size={16} className="text-blue-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">{campaign.name}</div>
-                  <div className="text-sm text-gray-600">
-                    {campaign.distanceKm}km • {campaign.date} • {(campaign.count || 0).toLocaleString()}건
-                  </div>
-                </div>
-              </div>
-              <StatusBadge status={campaign.status} />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.3 }}
+    >
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="pb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-bold text-gray-900 mb-3">🎯 최근 캠페인</CardTitle>
+              <CardDescription className="text-lg text-gray-600">진행 중이거나 최근 완료된 캠페인</CardDescription>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Target size={48} className="mx-auto mb-4 text-gray-300" />
-            <p>최근 캠페인이 없습니다.</p>
-            <Link href="/campaigns/new" className="btn btn-primary btn-sm mt-3">
-              캠페인 생성하기
-            </Link>
+            <Button asChild size="sm">
+              <Link href="/campaigns/new">
+                <Plus size={16} />
+                캠페인 생성
+              </Link>
+            </Button>
           </div>
-        )}
-      </div>
-    </div>
+        </CardHeader>
+        <CardContent>
+          {campaignData.length > 0 ? (
+            <div className="space-y-4">
+              {campaignData.slice(0, 3).map((campaign) => (
+                                 <motion.div
+                   key={campaign.id}
+                   initial={{ opacity: 0, x: -20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   transition={{ duration: 0.3 }}
+                   className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                 >
+                   <div className="flex-1">
+                     <h4 className="font-semibold text-gray-900">{campaign.name}</h4>
+                     <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                       <span className="flex items-center gap-1">
+                         <MapPin size={14} />
+                         {campaign.distanceKm}km
+                       </span>
+                       <span>{campaign.date}</span>
+                       <span>{campaign.count?.toLocaleString() || 0}건</span>
+                     </div>
+                   </div>
+                   <StatusBadge status={campaign.status} />
+                 </motion.div>
+              ))}
+            </div>
+                     ) : (
+             <div className="text-center py-8 text-gray-500">
+               <Target size={48} className="mx-auto mb-4 text-gray-300" />
+               <p>최근 캠페인이 없습니다.</p>
+               <Button asChild className="mt-3">
+                 <Link href="/campaigns/new">
+                   캠페인 생성하기
+                 </Link>
+               </Button>
+             </div>
+           )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 
@@ -362,7 +333,6 @@ export default function DeliveryMonitorPage() {
   const [summary, setSummary] = useState(null);
   const [realtimeStats, setRealtimeStats] = useState([]);
   const [hourlyStats, setHourlyStats] = useState([]);
-  const [regionDistribution, setRegionDistribution] = useState([]);
   const [recentCampaigns, setRecentCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -422,9 +392,6 @@ export default function DeliveryMonitorPage() {
       const hourlyData = await apiService.getTodayHourlyStats();
       setHourlyStats(hourlyData);
       
-      const regionData = await apiService.getRegionDistribution();
-      setRegionDistribution(regionData);
-      
       const campaignsData = await apiService.getRecentCampaigns();
       setRecentCampaigns(campaignsData);
       
@@ -439,7 +406,7 @@ export default function DeliveryMonitorPage() {
 
   if (loading && !summary) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           대시보드 데이터를 불러오는 중...
@@ -449,107 +416,139 @@ export default function DeliveryMonitorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       {/* 헤더 */}
-      <div className="mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">📊 발송 현황 대시보드</h1>
-            <p className="text-gray-600">실시간 메시지 발송 현황과 통계를 확인하세요</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">📊 발송 현황 대시보드</h1>
+            <p className="text-lg text-gray-600">실시간 메시지 발송 현황과 통계를 확인하세요</p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={loadData}
-              className="btn btn-secondary"
+            <Button 
+              variant="outline" 
+              onClick={loadData} 
               disabled={loading}
+              className="gap-2"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               새로고침
-            </button>
-            <Link href="/campaigns/new" className="btn btn-primary">
-              <Plus size={16} />
-              캠페인 생성
-            </Link>
+            </Button>
+            <Button asChild className="gap-2">
+              <Link href="/campaigns/new">
+                <Plus size={16} />
+                캠페인 생성
+              </Link>
+            </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* KPI 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-4 gap-4 mb-12">
         <KpiCard
           title="총 발송"
           value={summary?.totalDeliveries?.toLocaleString() || "0"}
-          change={8}
           icon={Send}
           color="text-blue-600"
           bgColor="bg-blue-100"
+          gradient="bg-gradient-to-br from-blue-500 to-blue-600"
         />
         <KpiCard
           title="성공"
           value={summary?.sentCount?.toLocaleString() || "0"}
-          change={12}
           icon={CheckCircle}
           color="text-green-600"
           bgColor="bg-green-100"
+          gradient="bg-gradient-to-br from-green-500 to-green-600"
         />
         <KpiCard
           title="실패"
           value={summary?.failedCount?.toLocaleString() || "0"}
-          change={-5}
           icon={XCircle}
           color="text-red-600"
           bgColor="bg-red-100"
+          gradient="bg-gradient-to-br from-red-500 to-red-600"
         />
         <KpiCard
           title="대기중"
           value={summary?.pendingCount?.toLocaleString() || "0"}
-          change={15}
           icon={Clock}
           color="text-orange-600"
           bgColor="bg-orange-100"
+          gradient="bg-gradient-to-br from-orange-500 to-orange-600"
         />
       </div>
 
       {/* 탭 네비게이션 */}
-      <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-8"
+      >
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="realtime">실시간 모니터링</TabsTrigger>
+            <TabsTrigger value="queue">발송 대기열</TabsTrigger>
+            <TabsTrigger value="failed">실패 관리</TabsTrigger>
+            <TabsTrigger value="stats">통계</TabsTrigger>
+          </TabsList>
 
-      {/* 탭별 콘텐츠 */}
-      {activeTab === 'realtime' && (
-        <div className="space-y-6">
-          {/* 실시간 차트 */}
-          <RealtimeLineChart data={realtimeStats} />
-          
-          {/* 하단 차트 섹션 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* 탭별 콘텐츠 */}
+          <TabsContent value="realtime" className="space-y-16 mt-12">
+            {/* 실시간 차트 */}
+            <RealtimeLineChart data={realtimeStats} />
+            
+            {/* 시간대별 차트 */}
             <HourlyBarChart data={hourlyStats} />
-            <RegionPieChart data={regionDistribution} />
-          </div>
-          
-          {/* 최근 캠페인 리스트 */}
-          <RecentCampaignsList campaigns={recentCampaigns} />
-        </div>
-      )}
+            
+            {/* 최근 캠페인 리스트 */}
+            <RecentCampaignsList campaigns={recentCampaigns} />
+          </TabsContent>
 
-      {activeTab === 'queue' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">발송 대기열</h2>
-          <p className="text-gray-500">발송 대기 중인 메시지 목록이 여기에 표시됩니다.</p>
-        </div>
-      )}
+                     <TabsContent value="queue" className="mt-12">
+             <Card className="border-0 shadow-lg">
+               <CardHeader className="pb-8">
+                 <CardTitle className="text-2xl font-bold text-gray-900 mb-3">⏳ 발송 대기열</CardTitle>
+                 <CardDescription className="text-lg text-gray-600">발송 대기 중인 메시지 목록</CardDescription>
+               </CardHeader>
+               <CardContent>
+                 <p className="text-gray-600">발송 대기 중인 메시지 목록이 여기에 표시됩니다.</p>
+               </CardContent>
+             </Card>
+           </TabsContent>
 
-      {activeTab === 'failed' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">실패 관리</h2>
-          <p className="text-gray-500">발송 실패한 메시지 관리가 여기에 표시됩니다.</p>
-        </div>
-      )}
+           <TabsContent value="failed" className="mt-12">
+             <Card className="border-0 shadow-lg">
+               <CardHeader className="pb-8">
+                 <CardTitle className="text-2xl font-bold text-gray-900 mb-3">❌ 실패 관리</CardTitle>
+                 <CardDescription className="text-lg text-gray-600">발송 실패한 메시지 관리</CardDescription>
+               </CardHeader>
+               <CardContent>
+                 <p className="text-gray-600">발송 실패한 메시지 관리가 여기에 표시됩니다.</p>
+               </CardContent>
+             </Card>
+           </TabsContent>
 
-      {activeTab === 'stats' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">통계</h2>
-          <p className="text-gray-500">상세한 통계 정보가 여기에 표시됩니다.</p>
-        </div>
-      )}
+           <TabsContent value="stats" className="mt-12">
+             <Card className="border-0 shadow-lg">
+               <CardHeader className="pb-8">
+                 <CardTitle className="text-2xl font-bold text-gray-900 mb-3">📋 통계</CardTitle>
+                 <CardDescription className="text-lg text-gray-600">상세한 통계 정보</CardDescription>
+               </CardHeader>
+               <CardContent>
+                 <p className="text-gray-600">상세한 통계 정보가 여기에 표시됩니다.</p>
+               </CardContent>
+             </Card>
+           </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 }

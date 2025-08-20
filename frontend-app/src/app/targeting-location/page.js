@@ -65,7 +65,7 @@ export default function TargetingLocationPage() {
         radius: formData.radiusKm
       });
 
-      // 새로운 위치 기반 고객 수 계산 API 사용 (백엔드 API)
+      // 먼저 새로운 위치 기반 고객 수 계산 API 사용
       const result = await apiService.getNearbyCustomers(
         formData.centerLat,
         formData.centerLng,
@@ -74,21 +74,41 @@ export default function TargetingLocationPage() {
 
       console.log('예상 도달 고객 수 결과:', result);
 
-      if (result && result.success && result.data) {
-        setEstimatedReach(`${result.data.count}명`);
-        setNearbyCustomers(result.data.customers || []);
+      if (result && result.success) {
+        // 응답 구조에 따라 처리
+        if (result.data && typeof result.data === 'object') {
+          // data가 객체인 경우 (count와 customers 포함)
+          setEstimatedReach(`${result.data.count || 0}명`);
+          setNearbyCustomers(result.data.customers || []);
+        } else if (typeof result.data === 'number') {
+          // data가 숫자인 경우
+          setEstimatedReach(`${result.data}명`);
+          setNearbyCustomers([]);
+        } else if (result.count !== undefined) {
+          // count가 최상위에 있는 경우
+          setEstimatedReach(`${result.count}명`);
+          setNearbyCustomers(result.data || []);
+        } else {
+          setEstimatedReach('0명');
+          setNearbyCustomers([]);
+        }
       } else {
         // 백업: 기존 API 사용
+        console.log('백업 API 사용...');
         const backupResult = await apiService.getEstimatedReach(
           formData.centerLat,
           formData.centerLng,
           Math.round(formData.radiusKm * 1000)
         );
 
-        if (backupResult && backupResult.data !== undefined) {
+        console.log('백업 API 결과:', backupResult);
+
+        if (backupResult && backupResult.success && backupResult.data !== undefined) {
           setEstimatedReach(`${backupResult.data}명`);
+        } else if (backupResult && typeof backupResult === 'number') {
+          setEstimatedReach(`${backupResult}명`);
         } else {
-          setEstimatedReach('계산 실패');
+          setEstimatedReach('0명');
         }
       }
     } catch (error) {
