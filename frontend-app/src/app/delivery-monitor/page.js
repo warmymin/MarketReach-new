@@ -87,6 +87,10 @@ const TabNavigation = ({ activeTab, setActiveTab }) => {
 
 // 실시간 라인 차트 컴포넌트
 const RealtimeLineChart = ({ data }) => {
+  // 한국 시간 기준 현재 시간
+  const now = new Date();
+  const koreaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
+  
   // 실시간 데이터 생성 (Mock)
   const defaultData = [
     { time: '14:00', total: 120, success: 100, failed: 20 },
@@ -104,7 +108,9 @@ const RealtimeLineChart = ({ data }) => {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-gray-900">최근 30분간 메시지 발송 현황</h2>
-        <p className="text-sm text-gray-500">실시간 발송 상태 모니터링</p>
+        <p className="text-sm text-gray-500">
+          실시간 발송 상태 모니터링 • 한국 시간: {koreaTime.toLocaleTimeString('ko-KR')}
+        </p>
       </div>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData}>
@@ -354,6 +360,7 @@ const RecentCampaignsList = ({ campaigns }) => {
 export default function DeliveryMonitorPage() {
   const [activeTab, setActiveTab] = useState('realtime');
   const [summary, setSummary] = useState(null);
+  const [realtimeStats, setRealtimeStats] = useState([]);
   const [hourlyStats, setHourlyStats] = useState([]);
   const [regionDistribution, setRegionDistribution] = useState([]);
   const [recentCampaigns, setRecentCampaigns] = useState([]);
@@ -407,7 +414,12 @@ export default function DeliveryMonitorPage() {
       const dashboardData = await apiService.getDashboardSummary();
       setSummary(dashboardData);
       
-      const hourlyData = await apiService.getHourlyStats();
+      // 실시간 데이터 로드
+      const realtimeData = await apiService.getRealtimeDeliveryStatus();
+      setRealtimeStats(realtimeData);
+      
+      // 오늘 시간대별 통계 로드
+      const hourlyData = await apiService.getTodayHourlyStats();
       setHourlyStats(hourlyData);
       
       const regionData = await apiService.getRegionDistribution();
@@ -466,7 +478,7 @@ export default function DeliveryMonitorPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <KpiCard
           title="총 발송"
-          value="15,420"
+          value={summary?.totalDeliveries?.toLocaleString() || "0"}
           change={8}
           icon={Send}
           color="text-blue-600"
@@ -474,7 +486,7 @@ export default function DeliveryMonitorPage() {
         />
         <KpiCard
           title="성공"
-          value="12,680"
+          value={summary?.sentCount?.toLocaleString() || "0"}
           change={12}
           icon={CheckCircle}
           color="text-green-600"
@@ -482,7 +494,7 @@ export default function DeliveryMonitorPage() {
         />
         <KpiCard
           title="실패"
-          value="890"
+          value={summary?.failedCount?.toLocaleString() || "0"}
           change={-5}
           icon={XCircle}
           color="text-red-600"
@@ -490,7 +502,7 @@ export default function DeliveryMonitorPage() {
         />
         <KpiCard
           title="대기중"
-          value="1,850"
+          value={summary?.pendingCount?.toLocaleString() || "0"}
           change={15}
           icon={Clock}
           color="text-orange-600"
@@ -505,7 +517,7 @@ export default function DeliveryMonitorPage() {
       {activeTab === 'realtime' && (
         <div className="space-y-6">
           {/* 실시간 차트 */}
-          <RealtimeLineChart />
+          <RealtimeLineChart data={realtimeStats} />
           
           {/* 하단 차트 섹션 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

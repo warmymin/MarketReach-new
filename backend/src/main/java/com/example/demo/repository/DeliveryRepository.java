@@ -54,4 +54,26 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     // 타겟팅 위치별 발송 목록 조회 (Campaign을 통해)
     @Query("SELECT d FROM Delivery d JOIN d.campaign c WHERE c.targetingLocation.id = :targetingLocationId")
     List<Delivery> findByCampaignTargetingLocationId(@Param("targetingLocationId") UUID targetingLocationId);
+    
+    // === 새로 추가하는 메서드들 ===
+    
+    // 특정 시간대의 발송 개수 조회
+    @Query("SELECT COUNT(d) FROM Delivery d WHERE d.createdAt BETWEEN :startTime AND :endTime")
+    long countByCreatedAtBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    
+    // 특정 상태와 시간대의 발송 개수 조회
+    @Query("SELECT COUNT(d) FROM Delivery d WHERE d.status = :status AND d.createdAt BETWEEN :startTime AND :endTime")
+    long countByStatusAndCreatedAtBetween(@Param("status") DeliveryStatus status, @Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    
+    // 지역별 발송 분포 통계 (고객 지역 기준)
+    @Query("SELECT c.dongCode, COUNT(d) FROM Delivery d JOIN d.customer c GROUP BY c.dongCode ORDER BY COUNT(d) DESC")
+    List<Object[]> getRegionDistributionStats();
+    
+    // 오늘 시간대별 성공/실패 통계 (한국 시간 기준)
+    @Query("SELECT EXTRACT(HOUR FROM d.createdAt) as hour, d.status, COUNT(d) as count " +
+           "FROM Delivery d " +
+           "WHERE CAST(d.createdAt AS DATE) = CURRENT_DATE " +
+           "GROUP BY EXTRACT(HOUR FROM d.createdAt), d.status " +
+           "ORDER BY hour, d.status")
+    List<Object[]> getTodayHourlyStatsByStatus();
 }

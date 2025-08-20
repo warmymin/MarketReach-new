@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -487,5 +489,144 @@ public class DeliveryService {
         }
         
         return distribution;
+    }
+
+    /**
+     * 실시간 발송 현황 조회 (최근 30분, 5분 간격, 한국 시간 기준)
+     */
+    public List<Map<String, Object>> getRealtimeDeliveryStatus() {
+        // 한국 시간대 설정
+        ZoneId koreaZone = ZoneId.of("Asia/Seoul");
+        LocalDateTime now = LocalDateTime.now(koreaZone);
+        LocalDateTime startTime = now.minusMinutes(30);
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        // 5분 간격으로 6개 구간 생성
+        for (int i = 0; i < 6; i++) {
+            LocalDateTime slotStart = startTime.plusMinutes(i * 5);
+            LocalDateTime slotEnd = slotStart.plusMinutes(5);
+            
+            // 해당 시간대의 발송 통계 조회
+            long totalCount = deliveryRepository.countByCreatedAtBetween(slotStart, slotEnd);
+            long sentCount = deliveryRepository.countByStatusAndCreatedAtBetween(DeliveryStatus.SENT, slotStart, slotEnd);
+            long failedCount = deliveryRepository.countByStatusAndCreatedAtBetween(DeliveryStatus.FAILED, slotStart, slotEnd);
+            
+            Map<String, Object> timeSlot = new HashMap<>();
+            timeSlot.put("time", slotStart.format(DateTimeFormatter.ofPattern("HH:mm")));
+            timeSlot.put("total", totalCount);
+            timeSlot.put("success", sentCount);
+            timeSlot.put("failed", failedCount);
+            
+            result.add(timeSlot);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 오늘 시간대별 발송 통계 조회 (한국 시간 기준)
+     */
+    public List<Map<String, Object>> getTodayHourlyStats() {
+        ZoneId koreaZone = ZoneId.of("Asia/Seoul");
+        LocalDateTime todayStart = LocalDateTime.now(koreaZone).toLocalDate().atStartOfDay();
+        LocalDateTime todayEnd = todayStart.plusDays(1);
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        // 9시부터 18시까지 시간대별 통계
+        for (int hour = 9; hour <= 18; hour++) {
+            LocalDateTime hourStart = todayStart.plusHours(hour);
+            LocalDateTime hourEnd = hourStart.plusHours(1);
+            
+            long successCount = deliveryRepository.countByStatusAndCreatedAtBetween(DeliveryStatus.SENT, hourStart, hourEnd);
+            long failedCount = deliveryRepository.countByStatusAndCreatedAtBetween(DeliveryStatus.FAILED, hourStart, hourEnd);
+            
+            Map<String, Object> hourStat = new HashMap<>();
+            hourStat.put("hour", String.format("%02d:00", hour));
+            hourStat.put("success", successCount);
+            hourStat.put("failed", failedCount);
+            
+            result.add(hourStat);
+        }
+        
+        return result;
+    }
+
+    /**
+     * 지역별 발송 분포 조회 (실제 데이터 기반)
+     */
+    public List<Map<String, Object>> getRegionDistributionReal() {
+        List<Object[]> rawData = deliveryRepository.getRegionDistributionStats();
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        for (Object[] row : rawData) {
+            String dongCode = (String) row[0];
+            Long count = (Long) row[1];
+            
+            // dongCode를 지역명으로 변환
+            String regionName = convertDongCodeToRegionName(dongCode);
+            
+            Map<String, Object> regionData = new HashMap<>();
+            regionData.put("name", regionName);
+            regionData.put("value", count);
+            
+            result.add(regionData);
+        }
+        
+        // 데이터가 없으면 기본 데이터 반환
+        if (result.isEmpty()) {
+            result.add(Map.of("name", "강남구", "value", 29));
+            result.add(Map.of("name", "서초구", "value", 23));
+            result.add(Map.of("name", "마포구", "value", 18));
+            result.add(Map.of("name", "종로구", "value", 15));
+            result.add(Map.of("name", "중구", "value", 15));
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 동코드를 지역명으로 변환하는 헬퍼 메서드
+     */
+    private String convertDongCodeToRegionName(String dongCode) {
+        if (dongCode == null || dongCode.isEmpty()) {
+            return "기타";
+        }
+        
+        // 동코드 앞 2자리가 구 코드
+        if (dongCode.length() >= 2) {
+            String guCode = dongCode.substring(0, 2);
+            switch (guCode) {
+                case "11": return "종로구";
+                case "12": return "중구";
+                case "13": return "용산구";
+                case "14": return "성동구";
+                case "15": return "광진구";
+                case "16": return "동대문구";
+                case "17": return "중랑구";
+                case "18": return "성북구";
+                case "19": return "강북구";
+                case "20": return "도봉구";
+                case "21": return "노원구";
+                case "22": return "은평구";
+                case "23": return "서대문구";
+                case "24": return "마포구";
+                case "25": return "양천구";
+                case "26": return "강서구";
+                case "27": return "구로구";
+                case "28": return "금천구";
+                case "29": return "영등포구";
+                case "30": return "동작구";
+                case "31": return "관악구";
+                case "32": return "서초구";
+                case "33": return "강남구";
+                case "34": return "송파구";
+                case "35": return "강동구";
+                default: return "기타";
+            }
+        }
+        
+        return "기타";
     }
 }

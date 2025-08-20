@@ -551,6 +551,30 @@ class ApiService {
     }
   }
 
+  // 실시간 발송 현황 조회 (한국 시간 기준)
+  async getRealtimeDeliveryStatus() {
+    try {
+      const response = await apiClient.get('/deliveries/realtime-status');
+      const data = response.data?.data || response.data;
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('실시간 발송 현황 조회 실패:', error);
+      return [];
+    }
+  }
+
+  // 오늘 시간대별 통계 조회 (한국 시간 기준)
+  async getTodayHourlyStats() {
+    try {
+      const response = await apiClient.get('/deliveries/today-hourly-stats');
+      const data = response.data?.data || response.data;
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('오늘 시간대별 통계 조회 실패:', error);
+      return [];
+    }
+  }
+
   // 최근 캠페인 목록 조회
   async getRecentCampaigns() {
     try {

@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/deliveries")
@@ -263,6 +268,48 @@ public class DeliveryController {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "message", "발송 상태 업데이트 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 실시간 발송 현황 조회 (최근 30분, 5분 간격, 한국 시간 기준)
+     */
+    @GetMapping("/realtime-status")
+    public ResponseEntity<?> getRealtimeDeliveryStatus() {
+        try {
+            List<Map<String, Object>> realtimeData = deliveryService.getRealtimeDeliveryStatus();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", realtimeData,
+                "timestamp", System.currentTimeMillis(),
+                "timezone", "Asia/Seoul"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "실시간 발송 현황 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 오늘 시간대별 발송 통계 조회 (한국 시간 기준)
+     */
+    @GetMapping("/today-hourly-stats")
+    public ResponseEntity<?> getTodayHourlyStats() {
+        try {
+            List<Map<String, Object>> hourlyStats = deliveryService.getTodayHourlyStats();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", hourlyStats,
+                "date", java.time.LocalDate.now().toString(),
+                "timezone", "Asia/Seoul"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "시간대별 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
             ));
         }
     }
