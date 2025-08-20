@@ -31,23 +31,23 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     long countByTargetingLocationIdAndStatus(UUID targetingLocationId, DeliveryStatus status);
     
     // 오늘 발송된 건수 조회
-    @Query("SELECT COUNT(d) FROM Delivery d WHERE DATE(d.createdAt) = CURRENT_DATE")
+    @Query("SELECT COUNT(d) FROM Delivery d WHERE CAST(d.createdAt AS DATE) = CURRENT_DATE")
     long countTodayDeliveries();
     
     // 시간대별 발송 건수 조회 (오늘)
-    @Query("SELECT HOUR(d.createdAt) as hour, COUNT(d) as count FROM Delivery d " +
-           "WHERE DATE(d.createdAt) = CURRENT_DATE " +
-           "GROUP BY HOUR(d.createdAt) ORDER BY hour")
+    @Query("SELECT EXTRACT(HOUR FROM d.createdAt) as hour, COUNT(d) as count FROM Delivery d " +
+           "WHERE CAST(d.createdAt AS DATE) = CURRENT_DATE " +
+           "GROUP BY EXTRACT(HOUR FROM d.createdAt) ORDER BY hour")
     List<Object[]> getHourlyDeliveryStats();
     
     // 최근 30분간 5분 단위 발송 통계
     @Query("SELECT " +
-           "FLOOR(MINUTE(d.createdAt) / 5) * 5 as timeSlot, " +
+           "FLOOR(EXTRACT(MINUTE FROM d.createdAt) / 5) * 5 as timeSlot, " +
            "d.status, " +
            "COUNT(d) as count " +
            "FROM Delivery d " +
            "WHERE d.createdAt >= :startTime " +
-           "GROUP BY FLOOR(MINUTE(d.createdAt) / 5) * 5, d.status " +
+           "GROUP BY FLOOR(EXTRACT(MINUTE FROM d.createdAt) / 5) * 5, d.status " +
            "ORDER BY timeSlot, d.status")
     List<Object[]> getRealtimeDeliveryStats(@Param("startTime") LocalDateTime startTime);
 }

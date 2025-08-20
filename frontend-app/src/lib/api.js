@@ -209,6 +209,16 @@ class ApiService {
     }
   }
 
+  async getCampaignDeliveryStats(campaignId) {
+    try {
+      const response = await apiClient.get(`/campaigns/${campaignId}/delivery-stats`);
+      return response.data.data;
+    } catch (error) {
+      console.error('캠페인 발송 통계 조회 실패:', error);
+      return null;
+    }
+  }
+
   async deleteCampaign(id) {
     try {
       const response = await apiClient.delete(`/campaigns/${id}`);

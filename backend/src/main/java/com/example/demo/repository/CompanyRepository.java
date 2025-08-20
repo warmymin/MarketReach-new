@@ -23,21 +23,14 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
     List<Company> findByIndustryContainingIgnoreCase(String industry);
     
     /**
-     * 고객 수와 캠페인 수를 포함한 회사 정보 조회
+     * 캠페인 수를 포함한 회사 정보 조회
      */
-    @Query("SELECT c, COUNT(DISTINCT cu.id) as customerCount, COUNT(DISTINCT ca.id) as campaignCount " +
+    @Query("SELECT c, COUNT(DISTINCT ca.id) as campaignCount " +
            "FROM Company c " +
-           "LEFT JOIN c.customers cu " +
            "LEFT JOIN c.campaigns ca " +
            "GROUP BY c.id " +
            "ORDER BY c.createdAt DESC")
     List<Object[]> findCompaniesWithStats();
-    
-    /**
-     * 특정 회사의 고객 수 조회
-     */
-    @Query("SELECT COUNT(cu) FROM Company c JOIN c.customers cu WHERE c.id = :companyId")
-    Long countCustomersByCompanyId(@Param("companyId") UUID companyId);
     
     /**
      * 특정 회사의 캠페인 수 조회

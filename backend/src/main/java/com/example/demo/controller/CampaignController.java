@@ -127,49 +127,7 @@ public class CampaignController {
         return ResponseEntity.ok(Map.of("success", true, "data", campaignService.searchCampaignsByName(name)));
     }
 
-    // 6) 예약 캠페인
-    @GetMapping("/scheduled")
-    public ResponseEntity<?> getScheduledCampaigns() {
-        return ResponseEntity.ok(Map.of("success", true, "data", campaignService.getScheduledCampaigns()));
-    }
 
-    @GetMapping("/scheduled/company/{companyId}")
-    public ResponseEntity<?> getScheduledCampaignsByCompany(@PathVariable UUID companyId) {
-        companyService.getCompanyById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "회사를 찾을 수 없습니다."));
-        return ResponseEntity.ok(Map.of("success", true, "data",
-                campaignService.getScheduledCampaignsByCompany(companyId)));
-    }
-
-    // 7) 위치 근처 활성 캠페인
-    @GetMapping("/near-location")
-    public ResponseEntity<?> getActiveCampaignsNearLocation(
-            @RequestParam UUID companyId,
-            @RequestParam Double lat,
-            @RequestParam Double lng) {
-
-        companyService.getCompanyById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "회사를 찾을 수 없습니다."));
-
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "data", campaignService.findActiveCampaignsNearLocation(companyId, lat, lng),
-                "location", Map.of("lat", lat, "lng", lng)
-        ));
-    }
-
-    // 8) 통계
-    @GetMapping("/stats/company/{companyId}")
-    public ResponseEntity<?> getCampaignStats(@PathVariable UUID companyId) {
-        companyService.getCompanyById(companyId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "회사를 찾을 수 없습니다."));
-        Object[] stats = campaignService.getCampaignStats(companyId);
-        return ResponseEntity.ok(Map.of("success", true, "data", Map.of(
-                "totalCampaigns", stats[0],
-                "activeCampaigns", stats[1],
-                "completedCampaigns", stats[2]
-        )));
-    }
 
     // 9) 타겟 미리보기
     @GetMapping("/{id}/preview-targeting")
@@ -214,6 +172,23 @@ public class CampaignController {
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
                 "message", "캠페인 발송 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    // 13) 캠페인별 발송 통계 조회
+    @GetMapping("/{id}/delivery-stats")
+    public ResponseEntity<?> getCampaignDeliveryStats(@PathVariable UUID id) {
+        try {
+            Map<String, Object> stats = deliveryService.getCampaignDeliveryStats(id);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "발송 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
             ));
         }
     }

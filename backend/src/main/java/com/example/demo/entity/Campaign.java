@@ -48,8 +48,7 @@ public class Campaign {
     
 
     
-    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<QrEvent> qrEvents = new ArrayList<>();
+
     
     // DTO용 필드 (JSON 직렬화/역직렬화용)
     @Transient
@@ -151,13 +150,7 @@ public class Campaign {
     
 
     
-    public List<QrEvent> getQrEvents() {
-        return qrEvents;
-    }
-    
-    public void setQrEvents(List<QrEvent> qrEvents) {
-        this.qrEvents = qrEvents;
-    }
+
     
     public UUID getCompanyId() {
         return companyId;
@@ -167,11 +160,7 @@ public class Campaign {
         this.companyId = companyId;
     }
     
-    // 편의 메서드
-    public void addQrEvent(QrEvent qrEvent) {
-        qrEvents.add(qrEvent);
-        qrEvent.setCampaign(this);
-    }
+
     
     @Override
     public String toString() {

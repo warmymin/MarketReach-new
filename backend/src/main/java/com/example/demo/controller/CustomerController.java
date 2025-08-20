@@ -3,123 +3,226 @@ package com.example.demo.controller;
 import com.example.demo.entity.Customer;
 import com.example.demo.service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/customers")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class CustomerController {
-
+    
     @Autowired
     private CustomerService customerService;
-
+    
+    /**
+     * 전체 고객 조회
+     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getAllCustomers() {
+    public ResponseEntity<?> getAllCustomers() {
         try {
             List<Customer> customers = customerService.getAllCustomers();
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", customers);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers
+            ));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 목록 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
-
+    
+    /**
+     * 페이지별 고객 조회
+     */
+    @GetMapping("/page")
+    public ResponseEntity<?> getCustomersByPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<Customer> customers = customerService.getCustomers(PageRequest.of(page, size));
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers.getContent(),
+                "totalElements", customers.getTotalElements(),
+                "totalPages", customers.getTotalPages(),
+                "currentPage", customers.getNumber()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 목록 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * ID로 고객 조회
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getCustomerById(@PathVariable String id) {
+    public ResponseEntity<?> getCustomerById(@PathVariable UUID id) {
         try {
-            Customer customer = customerService.getCustomerById(id);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", customer);
-            return ResponseEntity.ok(response);
+            return customerService.getCustomerById(id)
+                    .map(customer -> ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "data", customer
+                    )))
+                    .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
-
-    @PostMapping
-    public ResponseEntity<Map<String, Object>> createCustomer(@RequestBody Customer customer) {
+    
+    /**
+     * 전화번호로 고객 검색
+     */
+    @GetMapping("/search/phone")
+    public ResponseEntity<?> searchCustomersByPhone(@RequestParam String phone) {
         try {
-            Customer createdCustomer = customerService.createCustomer(customer);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", createdCustomer);
-            return ResponseEntity.ok(response);
+            List<Customer> customers = customerService.searchCustomersByPhone(phone);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers
+            ));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 검색 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> updateCustomer(@PathVariable String id, @RequestBody Customer customer) {
+    
+    /**
+     * 이름으로 고객 검색
+     */
+    @GetMapping("/search/name")
+    public ResponseEntity<?> searchCustomersByName(@RequestParam String name) {
         try {
-            Customer updatedCustomer = customerService.updateCustomer(id, customer);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", updatedCustomer);
-            return ResponseEntity.ok(response);
+            List<Customer> customers = customerService.searchCustomersByName(name);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers
+            ));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 검색 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteCustomer(@PathVariable String id) {
+    
+    /**
+     * 동 코드로 고객 검색
+     */
+    @GetMapping("/search/dong")
+    public ResponseEntity<?> getCustomersByDongCode(@RequestParam String dongCode) {
         try {
-            customerService.deleteCustomer(id);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "고객이 성공적으로 삭제되었습니다.");
-            return ResponseEntity.ok(response);
+            List<Customer> customers = customerService.getCustomersByDongCode(dongCode);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers
+            ));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 검색 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
-
-    // 새로운 위치 기반 고객 조회 API
+    
+    /**
+     * 위치 기반 고객 조회
+     */
     @GetMapping("/nearby")
-    public ResponseEntity<Map<String, Object>> getNearbyCustomers(
+    public ResponseEntity<?> getCustomersNearLocation(
             @RequestParam Double lat,
             @RequestParam Double lng,
-            @RequestParam(defaultValue = "5.0") Double radius) {
+            @RequestParam Integer radiusM) {
         try {
-            List<Customer> nearbyCustomers = customerService.getNearbyCustomers(lat, lng, radius);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("data", Map.of(
-                "count", nearbyCustomers.size(),
-                "radius", radius,
-                "center", Map.of("lat", lat, "lng", lng),
-                "customers", nearbyCustomers
+            List<Customer> customers = customerService.getCustomersNearLocation(lat, lng, radiusM);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", customers,
+                "count", customers.size()
             ));
-            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "위치 기반 고객 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * 고객 생성
+     */
+    @PostMapping
+    public ResponseEntity<?> createCustomer(@RequestBody Customer customer) {
+        try {
+            Customer created = customerService.createCustomer(customer);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "고객이 성공적으로 생성되었습니다.",
+                "data", created
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 생성 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * 고객 정보 수정
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateCustomer(@PathVariable UUID id, @RequestBody Customer customer) {
+        try {
+            Customer updated = customerService.updateCustomer(id, customer);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "고객 정보가 성공적으로 수정되었습니다.",
+                "data", updated
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 수정 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * 고객 삭제
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteCustomer(@PathVariable UUID id) {
+        try {
+            boolean deleted = customerService.deleteCustomer(id);
+            if (deleted) {
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "고객이 성공적으로 삭제되었습니다."
+                ));
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "고객 삭제 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
 }

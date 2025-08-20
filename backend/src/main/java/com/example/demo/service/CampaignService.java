@@ -40,21 +40,7 @@ public class CampaignService {
         return campaignRepository.findByNameContainingIgnoreCase(name);
     }
 
-    public List<Campaign> getScheduledCampaigns() {
-        return campaignRepository.findByScheduledAtAfterOrderByScheduledAtAsc(LocalDateTime.now());
-    }
 
-    public List<Campaign> getScheduledCampaignsByCompany(UUID companyId) {
-        return campaignRepository.findByCompanyIdAndScheduledAtAfterOrderByScheduledAtAsc(companyId, LocalDateTime.now());
-    }
-
-    public List<Campaign> findActiveCampaignsNearLocation(UUID companyId, Double lat, Double lng) {
-        return campaignRepository.findActiveCampaignsNearLocation(companyId, lat, lng, LocalDateTime.now());
-    }
-
-    public Object[] getCampaignStats(UUID companyId) {
-        return campaignRepository.getCampaignStats(companyId, LocalDateTime.now());
-    }
 
     public Campaign updateCampaign(UUID id, Campaign campaignDetails) {
         Optional<Campaign> campaign = campaignRepository.findById(id);
@@ -63,7 +49,7 @@ public class CampaignService {
             existingCampaign.setName(campaignDetails.getName());
             existingCampaign.setMessage(campaignDetails.getMessage());
             existingCampaign.setTargetingLocation(campaignDetails.getTargetingLocation());
-            existingCampaign.setScheduledAt(campaignDetails.getScheduledAt());
+    
             return campaignRepository.save(existingCampaign);
         }
         return null;

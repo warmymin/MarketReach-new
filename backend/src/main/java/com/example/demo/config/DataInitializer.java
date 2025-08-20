@@ -133,9 +133,6 @@ public class DataInitializer implements CommandLineRunner {
         String dongCode = DONG_CODES.get((int) (Math.random() * DONG_CODES.size()));
         customer.setDongCode(dongCode);
         
-        // 회사 설정
-        customer.setCompany(company);
-        
         return customer;
     }
 }

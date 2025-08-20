@@ -98,14 +98,6 @@ public class CompanyService {
     }
     
     /**
-     * 특정 회사의 고객 수 조회
-     */
-    @Transactional(readOnly = true)
-    public Long getCustomerCountByCompanyId(UUID companyId) {
-        return companyRepository.countCustomersByCompanyId(companyId);
-    }
-    
-    /**
      * 특정 회사의 캠페인 수 조회
      */
     @Transactional(readOnly = true)

@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
+  const [campaignStats, setCampaignStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,6 +24,20 @@ export default function CampaignsPage() {
         console.log('캠페인 데이터:', campaignsData);
         
         setCampaigns(campaignsData);
+        
+        // 각 캠페인의 발송 통계 로드
+        const stats = {};
+        for (const campaign of campaignsData) {
+          try {
+            const campaignStat = await apiService.getCampaignDeliveryStats(campaign.id);
+            stats[campaign.id] = campaignStat;
+          } catch (err) {
+            console.error(`캠페인 ${campaign.id} 통계 로드 실패:`, err);
+            stats[campaign.id] = null;
+          }
+        }
+        setCampaignStats(stats);
+        
         setError(null);
       } catch (err) {
         console.error('캠페인 데이터 로드 오류:', err);
@@ -67,9 +82,20 @@ export default function CampaignsPage() {
         const result = await apiService.sendCampaign(id);
         if (result.success) {
           alert(`캠페인 발송이 완료되었습니다!\n총 발송: ${result.data.totalDeliveries}건\n성공: ${result.data.sentCount}건\n실패: ${result.data.failedCount}건\n성공률: ${result.data.successRate.toFixed(1)}%`);
+          
           // 목록 새로고침
           const updatedData = await apiService.getCampaigns();
           setCampaigns(updatedData);
+          
+          // 발송 통계 새로고침
+          const updatedStats = { ...campaignStats };
+          try {
+            const campaignStat = await apiService.getCampaignDeliveryStats(id);
+            updatedStats[id] = campaignStat;
+            setCampaignStats(updatedStats);
+          } catch (err) {
+            console.error('발송 통계 새로고침 실패:', err);
+          }
         } else {
           alert('캠페인 발송에 실패했습니다: ' + result.message);
         }
@@ -83,8 +109,8 @@ export default function CampaignsPage() {
   // 상태별 아이콘 및 색상
   const getStatusInfo = (status) => {
     switch (status) {
-      case 'SCHEDULED':
-        return { icon: Clock, color: 'text-blue-600', bgColor: 'bg-blue-100', label: '예약됨' };
+      case 'DRAFT':
+        return { icon: Clock, color: 'text-gray-600', bgColor: 'bg-gray-100', label: '초안' };
       case 'IN_PROGRESS':
         return { icon: Play, color: 'text-yellow-600', bgColor: 'bg-yellow-100', label: '진행 중' };
       case 'COMPLETED':
@@ -99,6 +125,22 @@ export default function CampaignsPage() {
   // 메시지 요약 (100자 제한)
   const getMessageSummary = (message) => {
     return message.length > 100 ? message.substring(0, 100) + '...' : message;
+  };
+
+  // 발송 통계 표시
+  const getDeliveryStatsDisplay = (campaignId) => {
+    const stats = campaignStats[campaignId];
+    if (!stats) {
+      return {
+        totalDeliveries: '로딩 중...',
+        successRate: '로딩 중...'
+      };
+    }
+    
+    return {
+      totalDeliveries: stats.totalDeliveries || 0,
+      successRate: stats.successRate ? `${stats.successRate.toFixed(1)}%` : '0%'
+    };
   };
 
   return (
@@ -135,7 +177,7 @@ export default function CampaignsPage() {
                 className="input"
               >
                 <option value="all">전체 상태</option>
-                <option value="SCHEDULED">예약됨</option>
+                <option value="DRAFT">초안</option>
                 <option value="IN_PROGRESS">진행 중</option>
                 <option value="COMPLETED">완료됨</option>
                 <option value="FAILED">실패</option>
@@ -158,6 +200,7 @@ export default function CampaignsPage() {
           {filteredCampaigns.map(campaign => {
             const statusInfo = getStatusInfo(campaign.status);
             const StatusIcon = statusInfo.icon;
+            const deliveryStats = getDeliveryStatsDisplay(campaign.id);
             
             return (
               <div key={campaign.id} className="card hover:shadow-lg transition-shadow">
@@ -171,6 +214,7 @@ export default function CampaignsPage() {
                         onClick={() => handleSendCampaign(campaign.id)} 
                         className="btn btn-success btn-sm"
                         title="발송"
+                        disabled={campaign.status === 'IN_PROGRESS'}
                       >
                         <Send size={14} />
                       </button>
@@ -220,8 +264,6 @@ export default function CampaignsPage() {
                     </div>
                   )}
 
-
-
                   {/* 상태 */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -233,7 +275,7 @@ export default function CampaignsPage() {
                     </span>
                   </div>
 
-                  {/* 발송 통계 (임시 데이터) */}
+                  {/* 발송 통계 */}
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Users size={16} className="text-gray-400" />
@@ -242,11 +284,11 @@ export default function CampaignsPage() {
                     <div className="text-sm space-y-1">
                       <div className="flex justify-between">
                         <span className="text-gray-500">발송 수:</span>
-                        <span className="font-medium">계산 중...</span>
+                        <span className="font-medium">{deliveryStats.totalDeliveries}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">성공률:</span>
-                        <span className="font-medium">계산 중...</span>
+                        <span className="font-medium">{deliveryStats.successRate}</span>
                       </div>
                     </div>
                   </div>

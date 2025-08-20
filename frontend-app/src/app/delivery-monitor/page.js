@@ -9,7 +9,8 @@ import {
   XCircle, 
   Clock,
   Download,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { apiService } from '@/lib/api';
 
@@ -17,6 +18,8 @@ export default function DeliveryMonitorPage() {
   const [summary, setSummary] = useState(null);
   const [realtimeStats, setRealtimeStats] = useState([]);
   const [hourlyStats, setHourlyStats] = useState([]);
+  const [pendingDeliveries, setPendingDeliveries] = useState([]);
+  const [failedDeliveries, setFailedDeliveries] = useState([]);
   const [activeTab, setActiveTab] = useState('monitoring');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,15 +35,19 @@ export default function DeliveryMonitorPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [summaryData, realtimeData, hourlyData] = await Promise.all([
+      const [summaryData, realtimeData, hourlyData, pendingData, failedData] = await Promise.all([
         apiService.getDeliverySummary(),
         apiService.getRealtimeStats(),
-        apiService.getHourlyStats()
+        apiService.getHourlyStats(),
+        apiService.getDeliveriesByStatus('PENDING'),
+        apiService.getDeliveriesByStatus('FAILED')
       ]);
       
       setSummary(summaryData);
       setRealtimeStats(realtimeData);
       setHourlyStats(hourlyData);
+      setPendingDeliveries(pendingData || []);
+      setFailedDeliveries(failedData || []);
       setError(null);
     } catch (err) {
       console.error('데이터 로드 오류:', err);
@@ -82,7 +89,7 @@ export default function DeliveryMonitorPage() {
   );
 
   // 탭 컴포넌트
-  const TabButton = ({ id, label, icon: Icon, active }) => (
+  const TabButton = ({ id, label, icon: Icon, active, badge }) => (
     <button
       onClick={() => setActiveTab(id)}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -91,8 +98,41 @@ export default function DeliveryMonitorPage() {
     >
       <Icon size={16} />
       {label}
+      {badge && (
+        <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+          {badge}
+        </span>
+      )}
     </button>
   );
+
+  // 발송 상태별 색상
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'SENT':
+        return 'text-green-600 bg-green-100';
+      case 'FAILED':
+        return 'text-red-600 bg-red-100';
+      case 'PENDING':
+        return 'text-yellow-600 bg-yellow-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  // 발송 상태별 라벨
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'SENT':
+        return '발송 완료';
+      case 'FAILED':
+        return '발송 실패';
+      case 'PENDING':
+        return '대기 중';
+      default:
+        return status;
+    }
+  };
 
   if (loading && !summary) {
     return (
@@ -192,12 +232,14 @@ export default function DeliveryMonitorPage() {
               label="발송 대기열"
               icon={Clock}
               active={activeTab === 'queue'}
+              badge={pendingDeliveries.length > 0 ? pendingDeliveries.length : null}
             />
             <TabButton
               id="failed"
               label="실패 관리"
               icon={XCircle}
               active={activeTab === 'failed'}
+              badge={failedDeliveries.length > 0 ? failedDeliveries.length : null}
             />
             <TabButton
               id="stats"
@@ -221,31 +263,38 @@ export default function DeliveryMonitorPage() {
               </div>
               <div className="card-body">
                 <div className="space-y-4">
-                  {realtimeStats.map((stat, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 text-center">
-                          <div className="text-sm font-medium text-gray-700">
-                            {stat.timeSlot}분
+                  {realtimeStats.length > 0 ? (
+                    realtimeStats.map((stat, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 text-center">
+                            <div className="text-sm font-medium text-gray-700">
+                              {stat.timeSlot}분
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-4">
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span className="text-sm text-gray-600">성공: {stat.sent}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <span className="text-sm text-gray-600">실패: {stat.failed}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span className="text-sm text-gray-600">대기: {stat.pending}</span>
+                          <div className="flex gap-4">
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <span className="text-sm text-gray-600">성공: {stat.sent}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                              <span className="text-sm text-gray-600">실패: {stat.failed}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                              <span className="text-sm text-gray-600">대기: {stat.pending}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <TrendingUp size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>최근 30분간 발송 데이터가 없습니다.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -257,24 +306,31 @@ export default function DeliveryMonitorPage() {
               </div>
               <div className="card-body">
                 <div className="space-y-3">
-                  {hourlyStats.map((stat, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">
-                        {stat.hour}시
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${Math.min((stat.count / 100) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-sm text-gray-600 w-12 text-right">
-                          {stat.count}건
+                  {hourlyStats.length > 0 ? (
+                    hourlyStats.map((stat, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">
+                          {stat.hour}시
                         </span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full" 
+                              style={{ width: `${Math.min((stat.count / 100) * 100, 100)}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 w-12 text-right">
+                            {stat.count}건
+                          </span>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock size={48} className="mx-auto mb-4 text-gray-300" />
+                      <p>오늘의 시간대별 데이터가 없습니다.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -289,10 +345,48 @@ export default function DeliveryMonitorPage() {
               <span className="text-sm text-gray-500">현재 대기 중인 발송 목록</span>
             </div>
             <div className="card-body">
-              <div className="text-center py-8 text-gray-500">
-                <Clock size={48} className="mx-auto mb-4 text-gray-300" />
-                <p>현재 대기 중인 발송이 없습니다.</p>
-              </div>
+              {pendingDeliveries.length > 0 ? (
+                <div className="space-y-4">
+                  {pendingDeliveries.slice(0, 10).map((delivery) => (
+                    <div key={delivery.id} className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-yellow-100 rounded-full">
+                          <Clock size={16} className="text-yellow-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {delivery.customer?.name || '알 수 없는 고객'}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {delivery.customer?.phone || '전화번호 없음'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {delivery.targetingLocation?.name || '타겟팅 위치 없음'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">
+                          {delivery.createdAt ? new Date(delivery.createdAt).toLocaleString() : '시간 정보 없음'}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
+                          {getStatusLabel(delivery.status)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingDeliveries.length > 10 && (
+                    <div className="text-center py-4 text-gray-500">
+                      외 {pendingDeliveries.length - 10}건의 대기 중인 발송이 있습니다.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Clock size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p>현재 대기 중인 발송이 없습니다.</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -305,10 +399,51 @@ export default function DeliveryMonitorPage() {
               <span className="text-sm text-gray-500">발송 실패한 메시지 관리</span>
             </div>
             <div className="card-body">
-              <div className="text-center py-8 text-gray-500">
-                <XCircle size={48} className="mx-auto mb-4 text-gray-300" />
-                <p>실패한 발송이 없습니다.</p>
-              </div>
+              {failedDeliveries.length > 0 ? (
+                <div className="space-y-4">
+                  {failedDeliveries.slice(0, 10).map((delivery) => (
+                    <div key={delivery.id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-red-100 rounded-full">
+                          <AlertTriangle size={16} className="text-red-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {delivery.customer?.name || '알 수 없는 고객'}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {delivery.customer?.phone || '전화번호 없음'}
+                          </div>
+                          <div className="text-xs text-red-600 mt-1">
+                            오류: {delivery.errorCode || '알 수 없는 오류'}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {delivery.targetingLocation?.name || '타겟팅 위치 없음'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-600">
+                          {delivery.createdAt ? new Date(delivery.createdAt).toLocaleString() : '시간 정보 없음'}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
+                          {getStatusLabel(delivery.status)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {failedDeliveries.length > 10 && (
+                    <div className="text-center py-4 text-gray-500">
+                      외 {failedDeliveries.length - 10}건의 실패한 발송이 있습니다.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <XCircle size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p>실패한 발송이 없습니다.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

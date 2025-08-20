@@ -32,41 +32,5 @@ public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
      */
     List<Campaign> findByNameContainingIgnoreCase(String name);
     
-    /**
-     * 예약된 캠페인 조회 (현재 시간 이후)
-     */
-    List<Campaign> findByScheduledAtAfterOrderByScheduledAtAsc(LocalDateTime now);
-    
-    /**
-     * 회사별 예약된 캠페인 조회
-     */
-    @Query("SELECT c FROM Campaign c WHERE c.company.id = :companyId AND c.scheduledAt >= :now ORDER BY c.scheduledAt ASC")
-    List<Campaign> findByCompanyIdAndScheduledAtAfterOrderByScheduledAtAsc(@Param("companyId") UUID companyId, @Param("now") LocalDateTime now);
-    
-    /**
-     * 특정 반경 내에서 실행 가능한 캠페인 조회
-     */
-    @Query(value = "SELECT c.* FROM campaigns c " +
-                   "WHERE c.company_id = :companyId " +
-                   "AND c.scheduled_at >= :now " +
-                   "AND (6371000 * acos(cos(radians(:lat)) * cos(radians(c.lat)) * " +
-                   "cos(radians(c.lng) - radians(:lng)) + sin(radians(:lat)) * sin(radians(c.lat)))) <= c.radius " +
-                   "ORDER BY c.scheduled_at ASC", 
-           nativeQuery = true)
-    List<Campaign> findActiveCampaignsNearLocation(@Param("companyId") UUID companyId,
-                                                  @Param("lat") Double lat,
-                                                  @Param("lng") Double lng,
-                                                  @Param("now") LocalDateTime now);
-    
-    /**
-     * 캠페인 통계 조회
-     */
-    @Query(value = "SELECT " +
-                   "COUNT(*) as total_campaigns, " +
-                   "COUNT(CASE WHEN scheduled_at >= :now THEN 1 END) as active_campaigns, " +
-                   "COUNT(CASE WHEN scheduled_at < :now THEN 1 END) as completed_campaigns " +
-                   "FROM campaigns " +
-                   "WHERE company_id = :companyId", 
-           nativeQuery = true)
-    Object[] getCampaignStats(@Param("companyId") UUID companyId, @Param("now") LocalDateTime now);
+
 }

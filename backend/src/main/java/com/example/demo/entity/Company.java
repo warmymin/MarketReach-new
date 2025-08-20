@@ -1,8 +1,8 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.GenericGenerator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
@@ -20,7 +20,6 @@ public class Company {
     @Column(columnDefinition = "uuid")
     private UUID id;
     
-    @NotBlank(message = "회사명은 필수입니다.")
     @Column(nullable = false)
     private String name;
     
@@ -40,11 +39,8 @@ public class Company {
     private String email;
     
     @Column(name = "created_at", nullable = false, updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
-    
-    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference("company-customers")
-    private List<Customer> customers = new ArrayList<>();
     
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference("company-campaigns")
@@ -126,14 +122,6 @@ public class Company {
         this.createdAt = createdAt;
     }
     
-    public List<Customer> getCustomers() {
-        return customers;
-    }
-    
-    public void setCustomers(List<Customer> customers) {
-        this.customers = customers;
-    }
-    
     public List<Campaign> getCampaigns() {
         return campaigns;
     }
@@ -143,11 +131,6 @@ public class Company {
     }
     
     // 편의 메서드
-    public void addCustomer(Customer customer) {
-        customers.add(customer);
-        customer.setCompany(this);
-    }
-    
     public void addCampaign(Campaign campaign) {
         campaigns.add(campaign);
         campaign.setCompany(this);

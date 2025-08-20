@@ -25,6 +25,7 @@ import com.example.demo.repository.CampaignRepository;
 import java.util.Arrays;
 import com.example.demo.repository.TargetingLocationRepository;
 import com.example.demo.repository.DeliveryRepository;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/test")
@@ -140,17 +141,17 @@ public class TestController {
             List<Customer> customers = new ArrayList<>();
             
             // 강남역 근처 고객들
-            customers.add(createCustomer("김철수", "010-1111-1111", 37.498000, 127.027600, "1168010100", company1));
-            customers.add(createCustomer("이영희", "010-1111-1112", 37.497500, 127.028000, "1168010100", company1));
-            customers.add(createCustomer("박민수", "010-1111-1113", 37.498500, 127.027000, "1168010100", company1));
+            customers.add(createCustomer("김철수", "010-1111-1111", 37.498000, 127.027600, "1168010100"));
+            customers.add(createCustomer("이영희", "010-1111-1112", 37.497500, 127.028000, "1168010100"));
+            customers.add(createCustomer("박민수", "010-1111-1113", 37.498500, 127.027000, "1168010100"));
             
             // 홍대입구 근처 고객들
-            customers.add(createCustomer("최지영", "010-2222-2221", 37.557000, 126.925000, "1144012400", company1));
-            customers.add(createCustomer("정수민", "010-2222-2222", 37.556500, 126.925500, "1144012400", company1));
+            customers.add(createCustomer("최지영", "010-2222-2221", 37.557000, 126.925000, "1144012400"));
+            customers.add(createCustomer("정수민", "010-2222-2222", 37.556500, 126.925500, "1144012400"));
             
             // 신촌역 근처 고객들
-            customers.add(createCustomer("한미영", "010-3333-3331", 37.555000, 126.936000, "1144012400", company2));
-            customers.add(createCustomer("송태호", "010-3333-3332", 37.555500, 126.936500, "1144012400", company2));
+            customers.add(createCustomer("한미영", "010-3333-3331", 37.555000, 126.936000, "1144012400"));
+            customers.add(createCustomer("송태호", "010-3333-3332", 37.555500, 126.936500, "1144012400"));
             
             // 3. 위치 기반 타겟팅 생성
             TargetingLocation targeting1 = new TargetingLocation();
@@ -177,8 +178,7 @@ public class TestController {
             campaign1.setMessage("강남역 근처 고객 대상 특별 할인");
             campaign1.setTargetingLocation(targeting1);
             campaign1.setDescription("강남역 근처 고객 대상 특별 할인");
-            campaign1.setStartDate(LocalDateTime.now());
-            campaign1.setEndDate(LocalDateTime.now().plusDays(30));
+
             campaign1.setStatus("ACTIVE");
             campaign1.setCompany(company1);
             campaign1 = campaignService.createCampaign(campaign1);
@@ -188,8 +188,7 @@ public class TestController {
             campaign2.setMessage("홍대입구 근처 고객 대상 문화 이벤트");
             campaign2.setTargetingLocation(targeting2);
             campaign2.setDescription("홍대입구 근처 고객 대상 문화 이벤트");
-            campaign2.setStartDate(LocalDateTime.now());
-            campaign2.setEndDate(LocalDateTime.now().plusDays(60));
+
             campaign2.setStatus("ACTIVE");
             campaign2.setCompany(company2);
             campaign2 = campaignService.createCampaign(campaign2);
@@ -201,11 +200,11 @@ public class TestController {
                 Delivery delivery = new Delivery();
                 delivery.setCustomer(customer);
                 delivery.setTargetingLocation(targeting1); // 기본적으로 첫 번째 타겟팅 사용
-                delivery.setStatus(Delivery.DeliveryStatus.SUCCESS);
+                delivery.setStatus(Delivery.DeliveryStatus.SENT);
                 delivery.setMessage("안녕하세요! 특별한 혜택을 확인해보세요.");
                 delivery.setCreatedAt(LocalDateTime.now());
-                delivery.setDeliveredAt(LocalDateTime.now().plusMinutes(5));
-                deliveryService.createDelivery(delivery);
+                delivery.setSentAt(LocalDateTime.now().plusMinutes(5));
+                deliveryRepository.save(delivery);
             }
             
             response.put("success", true);
@@ -227,14 +226,68 @@ public class TestController {
         return response;
     }
     
-    private Customer createCustomer(String name, String phone, Double lat, Double lng, String dongCode, Company company) {
+    // 기존 캠페인들을 타겟팅 위치와 연결
+    @PostMapping("/fix-campaign-targeting")
+    public ResponseEntity<?> fixCampaignTargeting() {
+        try {
+            // 강남역 핫플 타겟팅 ID
+            UUID gangnamTargetingId = UUID.fromString("04d785e1-b422-4b60-a362-c0aa11dec957");
+            // 홍대 문화지구 타겟팅 ID
+            UUID hongdaeTargetingId = UUID.fromString("c69c20e6-b090-4756-8351-d76846220597");
+            // 테스트 타겟팅 ID
+            UUID testTargetingId = UUID.fromString("74d686be-32fd-4eb4-9dc4-03dc0cb32608");
+            // 강남역 핫플입니다 타겟팅 ID
+            UUID gangnam2TargetingId = UUID.fromString("7bb476b8-95c7-413e-9156-637acadca224");
+            
+            // 캠페인들을 타겟팅과 연결
+            List<Campaign> campaigns = campaignRepository.findAll();
+            int updatedCount = 0;
+            
+            for (Campaign campaign : campaigns) {
+                if (campaign.getTargetingLocation() == null) {
+                    // 캠페인 이름에 따라 적절한 타겟팅 할당
+                    if (campaign.getName().contains("강남") || campaign.getName().contains("핫플")) {
+                        if (campaign.getName().contains("핫플입니다")) {
+                            campaign.setTargetingLocation(targetingLocationRepository.findById(gangnam2TargetingId).orElse(null));
+                        } else {
+                            campaign.setTargetingLocation(targetingLocationRepository.findById(gangnamTargetingId).orElse(null));
+                        }
+                    } else if (campaign.getName().contains("홍대") || campaign.getName().contains("문화")) {
+                        campaign.setTargetingLocation(targetingLocationRepository.findById(hongdaeTargetingId).orElse(null));
+                    } else if (campaign.getName().contains("테스트")) {
+                        campaign.setTargetingLocation(targetingLocationRepository.findById(testTargetingId).orElse(null));
+                    } else {
+                        // 기본값으로 강남역 타겟팅 사용
+                        campaign.setTargetingLocation(targetingLocationRepository.findById(gangnamTargetingId).orElse(null));
+                    }
+                    
+                    // 상태를 DRAFT로 변경
+                    campaign.setStatus("DRAFT");
+                    campaignRepository.save(campaign);
+                    updatedCount++;
+                }
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", updatedCount + "개의 캠페인이 타겟팅 위치와 연결되었습니다.",
+                "updatedCount", updatedCount
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "캠페인 타겟팅 연결 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    private Customer createCustomer(String name, String phone, Double lat, Double lng, String dongCode) {
         Customer customer = new Customer();
         customer.setName(name);
         customer.setPhone(phone);
         customer.setLat(lat);
         customer.setLng(lng);
         customer.setDongCode(dongCode);
-        customer.setCompany(company);
         return customerService.createCustomer(customer);
     }
 }

@@ -50,9 +50,7 @@ public class Delivery {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference("delivery-qrevents")
-    private List<QrEvent> qrEvents = new ArrayList<>();
+
     
     // 생성자
     public Delivery() {
@@ -129,19 +127,9 @@ public class Delivery {
         this.createdAt = createdAt;
     }
     
-    public List<QrEvent> getQrEvents() {
-        return qrEvents;
-    }
+
     
-    public void setQrEvents(List<QrEvent> qrEvents) {
-        this.qrEvents = qrEvents;
-    }
-    
-    // 편의 메서드
-    public void addQrEvent(QrEvent qrEvent) {
-        qrEvents.add(qrEvent);
-        qrEvent.setDelivery(this);
-    }
+
     
     public void markAsSent() {
         this.status = DeliveryStatus.SENT;
