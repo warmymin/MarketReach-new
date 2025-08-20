@@ -571,6 +571,17 @@ class ApiService {
     }
   }
 
+  // 발송 내역 조회
+  async getDeliveries() {
+    try {
+      const response = await apiClient.get('/deliveries');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('발송 내역 조회 실패:', error);
+      return [];
+    }
+  }
+
   // 최근 캠페인 목록 조회
   async getRecentCampaigns() {
     try {
