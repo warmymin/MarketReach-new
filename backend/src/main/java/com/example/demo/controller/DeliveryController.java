@@ -35,39 +35,76 @@ public class DeliveryController {
     /**
      * 발송 통계 요약 조회
      */
-    @GetMapping("/stats/summary")
-    public ResponseEntity<Map<String, Object>> getDeliverySummary() {
+    @GetMapping("/summary")
+    public ResponseEntity<?> getDeliverySummary() {
         try {
             Map<String, Object> summary = deliveryService.getDeliverySummary();
-            return ResponseEntity.ok(summary);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", summary
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "발송 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
     
     /**
-     * 실시간 발송 통계 조회 (최근 30분)
+     * 최근 발송 내역 조회
      */
-    @GetMapping("/stats/realtime")
-    public ResponseEntity<List<Map<String, Object>>> getRealtimeStats() {
+    @GetMapping("/recent")
+    public ResponseEntity<?> getRecentDeliveries() {
+        try {
+            List<Delivery> recentDeliveries = deliveryService.getRecentDeliveries();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", recentDeliveries
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "최근 발송 내역 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * 실시간 발송 통계 조회
+     */
+    @GetMapping("/realtime-stats")
+    public ResponseEntity<?> getRealtimeStats() {
         try {
             List<Map<String, Object>> stats = deliveryService.getRealtimeStats();
-            return ResponseEntity.ok(stats);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "실시간 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
     
     /**
      * 시간대별 발송 통계 조회
      */
-    @GetMapping("/stats/hourly")
-    public ResponseEntity<List<Map<String, Object>>> getHourlyStats() {
+    @GetMapping("/hourly-stats")
+    public ResponseEntity<?> getHourlyStats() {
         try {
             List<Map<String, Object>> stats = deliveryService.getHourlyStats();
-            return ResponseEntity.ok(stats);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "시간대별 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
     
@@ -108,6 +145,125 @@ public class DeliveryController {
             return ResponseEntity.ok(deliveries);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * 발송 통계 요약 조회 (대시보드용)
+     */
+    @GetMapping("/stats/summary")
+    public ResponseEntity<?> getDeliveryStatsSummary() {
+        try {
+            Map<String, Object> summary = deliveryService.getDeliverySummary();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", summary
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "발송 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 실시간 발송 통계 조회 (대시보드용)
+     */
+    @GetMapping("/stats/realtime")
+    public ResponseEntity<?> getDeliveryStatsRealtime() {
+        try {
+            List<Map<String, Object>> stats = deliveryService.getRealtimeStats();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "실시간 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 시간대별 발송 통계 조회 (대시보드용)
+     */
+    @GetMapping("/stats/hourly")
+    public ResponseEntity<?> getDeliveryStatsHourly() {
+        try {
+            List<Map<String, Object>> stats = deliveryService.getHourlyStats();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "시간대별 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 타겟팅 위치별 발송 통계 조회
+     */
+    @GetMapping("/stats/by-targeting/{targetingId}")
+    public ResponseEntity<?> getDeliveryStatsByTargeting(@PathVariable UUID targetingId) {
+        try {
+            Map<String, Object> stats = deliveryService.getDeliveryStatsByTargeting(targetingId);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", stats
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "타겟팅별 발송 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 지역별 분포 통계 조회
+     */
+    @GetMapping("/region-distribution")
+    public ResponseEntity<?> getRegionDistribution() {
+        try {
+            List<Map<String, Object>> distribution = deliveryService.getRegionDistribution();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", distribution
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "지역별 분포 통계 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * 발송 상태 업데이트
+     */
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateDeliveryStatus(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> request) {
+        try {
+            String status = request.get("status");
+            DeliveryStatus deliveryStatus = DeliveryStatus.valueOf(status.toUpperCase());
+            
+            Delivery updated = deliveryService.updateDeliveryStatus(id, deliveryStatus);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", updated
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "발송 상태 업데이트 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
 }

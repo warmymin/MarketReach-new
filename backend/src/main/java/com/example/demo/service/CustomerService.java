@@ -99,4 +99,11 @@ public class CustomerService {
         }
         return false;
     }
+    
+    /**
+     * 고객 개수 조회
+     */
+    public long getCustomersCount() {
+        return customerRepository.count();
+    }
 }

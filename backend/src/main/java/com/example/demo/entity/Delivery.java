@@ -3,11 +3,8 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -15,7 +12,7 @@ import java.util.UUID;
 public class Delivery {
     
     public enum DeliveryStatus {
-        PENDING, SENT, FAILED
+        PENDING, SENT, SUCCESS, FAILED
     }
     
     @Id
@@ -25,17 +22,17 @@ public class Delivery {
     private UUID id;
     
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campaign_id", nullable = false)
+    @JsonBackReference("campaign-deliveries")
+    private Campaign campaign;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
     @JsonBackReference("customer-deliveries")
     private Customer customer;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "targeting_location_id", nullable = true)
-    @JsonBackReference("targeting-location-deliveries")
-    private TargetingLocation targetingLocation;
-    
-    @Column(columnDefinition = "TEXT")
-    private String message;
+    @Column(name = "message_text_sent", columnDefinition = "TEXT")
+    private String messageTextSent;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -50,16 +47,15 @@ public class Delivery {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-
-    
     // 생성자
     public Delivery() {
         this.createdAt = LocalDateTime.now();
     }
     
-    public Delivery(TargetingLocation targetingLocation) {
+    public Delivery(Campaign campaign, Customer customer) {
         this();
-        this.targetingLocation = targetingLocation;
+        this.campaign = campaign;
+        this.customer = customer;
     }
     
     // Getter와 Setter
@@ -71,6 +67,14 @@ public class Delivery {
         this.id = id;
     }
     
+    public Campaign getCampaign() {
+        return campaign;
+    }
+    
+    public void setCampaign(Campaign campaign) {
+        this.campaign = campaign;
+    }
+    
     public Customer getCustomer() {
         return customer;
     }
@@ -79,20 +83,12 @@ public class Delivery {
         this.customer = customer;
     }
     
-    public TargetingLocation getTargetingLocation() {
-        return targetingLocation;
+    public String getMessageTextSent() {
+        return messageTextSent;
     }
     
-    public void setTargetingLocation(TargetingLocation targetingLocation) {
-        this.targetingLocation = targetingLocation;
-    }
-    
-    public String getMessage() {
-        return message;
-    }
-    
-    public void setMessage(String message) {
-        this.message = message;
+    public void setMessageTextSent(String messageTextSent) {
+        this.messageTextSent = messageTextSent;
     }
     
     public DeliveryStatus getStatus() {
@@ -125,33 +121,5 @@ public class Delivery {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-    
-
-    
-
-    
-    public void markAsSent() {
-        this.status = DeliveryStatus.SENT;
-        this.sentAt = LocalDateTime.now();
-        this.errorCode = null;
-    }
-    
-    public void markAsFailed(String errorCode) {
-        this.status = DeliveryStatus.FAILED;
-        this.errorCode = errorCode;
-        this.sentAt = null;
-    }
-    
-    @Override
-    public String toString() {
-        return "Delivery{" +
-                "id=" + id +
-                ", targetingLocation=" + (targetingLocation != null ? targetingLocation.getId() : "null") +
-                ", status=" + status +
-                ", errorCode='" + errorCode + '\'' +
-                ", sentAt=" + sentAt +
-                ", createdAt=" + createdAt +
-                '}';
     }
 }

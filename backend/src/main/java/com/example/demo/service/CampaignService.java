@@ -82,4 +82,21 @@ public class CampaignService {
         }
         return null;
     }
+
+    /**
+     * 최근 캠페인 조회
+     */
+    public List<Campaign> getRecentCampaigns() {
+        return campaignRepository.findAll().stream()
+                .sorted((c1, c2) -> c2.getCreatedAt().compareTo(c1.getCreatedAt()))
+                .limit(10)
+                .toList();
+    }
+    
+    /**
+     * 캠페인 개수 조회
+     */
+    public long getCampaignsCount() {
+        return campaignRepository.count();
+    }
 }

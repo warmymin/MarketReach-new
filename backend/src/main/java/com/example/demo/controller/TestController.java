@@ -197,11 +197,9 @@ public class TestController {
             
             // 5. 배송 데이터 생성
             for (Customer customer : customers) {
-                Delivery delivery = new Delivery();
-                delivery.setCustomer(customer);
-                delivery.setTargetingLocation(targeting1); // 기본적으로 첫 번째 타겟팅 사용
+                Delivery delivery = new Delivery(campaign1, customer);
                 delivery.setStatus(Delivery.DeliveryStatus.SENT);
-                delivery.setMessage("안녕하세요! 특별한 혜택을 확인해보세요.");
+                delivery.setMessageTextSent("안녕하세요! 특별한 혜택을 확인해보세요.");
                 delivery.setCreatedAt(LocalDateTime.now());
                 delivery.setSentAt(LocalDateTime.now().plusMinutes(5));
                 deliveryRepository.save(delivery);

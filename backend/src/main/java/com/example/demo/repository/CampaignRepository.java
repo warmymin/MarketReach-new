@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 @Repository
 public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
@@ -31,6 +32,32 @@ public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
      * 이름으로 캠페인 검색
      */
     List<Campaign> findByNameContainingIgnoreCase(String name);
-    
 
+    /**
+     * 타겟팅 위치별 캠페인 조회 (Entity 반환)
+     */
+    @Query("SELECT c FROM Campaign c WHERE c.targetingLocation.id = :targetingLocationId")
+    List<Campaign> findCampaignsByTargetingLocationId(@Param("targetingLocationId") UUID targetingLocationId);
+
+    /**
+     * 타겟팅 위치별 캠페인 조회 (Map 형태로 반환)
+     */
+    @Query("SELECT c.id, c.name, c.message, c.status, c.createdAt FROM Campaign c WHERE c.targetingLocation.id = :targetingLocationId")
+    List<Object[]> findCampaignsByTargetingLocationIdRaw(@Param("targetingLocationId") UUID targetingLocationId);
+
+    /**
+     * 타겟팅 위치별 캠페인 조회 (Map 형태로 반환)
+     */
+    default List<Map<String, Object>> findByTargetingLocationId(UUID targetingLocationId) {
+        List<Object[]> results = findCampaignsByTargetingLocationIdRaw(targetingLocationId);
+        return results.stream().map(row -> {
+            Map<String, Object> campaign = new java.util.HashMap<>();
+            campaign.put("id", row[0]);
+            campaign.put("name", row[1]);
+            campaign.put("message", row[2]);
+            campaign.put("status", row[3]);
+            campaign.put("createdAt", row[4]);
+            return campaign;
+        }).toList();
+    }
 }

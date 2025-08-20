@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Users, Target, Save, ArrowLeft } from 'lucide-react';
+import { MapPin, Users, Target, Save, ArrowLeft, BarChart3, Activity } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import Link from 'next/link';
 
@@ -19,6 +19,9 @@ export default function TargetingLocationPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [nearbyCustomers, setNearbyCustomers] = useState([]);
   const [showCustomerList, setShowCustomerList] = useState(false);
+  const [showDeliveryStats, setShowDeliveryStats] = useState(false);
+  const [deliveryStats, setDeliveryStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // 위치 선택 옵션
   const locationOptions = [
@@ -93,6 +96,19 @@ export default function TargetingLocationPage() {
       setEstimatedReach('계산 실패');
     } finally {
       setIsCalculating(false);
+    }
+  };
+
+  // 발송 현황 통계 로드
+  const loadDeliveryStats = async () => {
+    try {
+      setLoadingStats(true);
+      const stats = await apiService.getRealtimeDeliveryMonitoring();
+      setDeliveryStats(stats);
+    } catch (error) {
+      console.error('발송 현황 통계 로드 오류:', error);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -303,6 +319,87 @@ export default function TargetingLocationPage() {
               </div>
             </div>
           </div>
+
+          {/* 발송 현황 대시보드 연결 */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">
+                <Activity size={20} />
+                발송 현황 대시보드
+              </h2>
+            </div>
+            <div className="card-body">
+              <div className="text-center">
+                <p className="text-gray-600 mb-4">
+                  현재 타겟팅 위치의 발송 현황을 확인하세요
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowDeliveryStats(!showDeliveryStats);
+                      if (!showDeliveryStats && !deliveryStats) {
+                        loadDeliveryStats();
+                      }
+                    }}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <BarChart3 size={16} />
+                    {showDeliveryStats ? '숨기기' : '발송 현황 보기'}
+                  </button>
+                  <Link href="/delivery-monitor" className="btn btn-primary btn-sm">
+                    <Activity size={16} />
+                    전체 대시보드
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 발송 현황 통계 */}
+          {showDeliveryStats && (
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">
+                  <BarChart3 size={20} />
+                  실시간 발송 현황
+                </h2>
+              </div>
+              <div className="card-body">
+                {loadingStats ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="text-gray-600 mt-2">데이터를 불러오는 중...</p>
+                  </div>
+                ) : deliveryStats ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {deliveryStats.summary?.totalDeliveries || 0}
+                        </div>
+                        <div className="text-sm text-gray-600">총 발송</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {deliveryStats.summary?.successRate?.toFixed(1) || 0}%
+                        </div>
+                        <div className="text-sm text-gray-600">성공률</div>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <Link href="/delivery-monitor" className="btn btn-primary btn-sm">
+                        상세 보기
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <p>발송 데이터가 없습니다.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 고객 목록 */}
           {showCustomerList && nearbyCustomers.length > 0 && (

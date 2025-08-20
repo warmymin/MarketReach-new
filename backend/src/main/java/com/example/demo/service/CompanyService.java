@@ -98,6 +98,14 @@ public class CompanyService {
     }
     
     /**
+     * 회사 개수 조회
+     */
+    @Transactional(readOnly = true)
+    public long getCompaniesCount() {
+        return companyRepository.count();
+    }
+    
+    /**
      * 특정 회사의 캠페인 수 조회
      */
     @Transactional(readOnly = true)

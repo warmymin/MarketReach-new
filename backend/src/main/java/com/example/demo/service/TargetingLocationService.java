@@ -4,12 +4,16 @@ import com.example.demo.entity.TargetingLocation;
 import com.example.demo.entity.Company;
 import com.example.demo.repository.TargetingLocationRepository;
 import com.example.demo.repository.CompanyRepository;
+import com.example.demo.repository.CustomerRepository;
+import com.example.demo.repository.CampaignRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class TargetingLocationService {
@@ -19,6 +23,12 @@ public class TargetingLocationService {
     
     @Autowired
     private CompanyRepository companyRepository;
+    
+    @Autowired
+    private CustomerRepository customerRepository;
+    
+    @Autowired
+    private CampaignRepository campaignRepository;
     
     // 타겟팅 위치 생성
     public TargetingLocation createTargetingLocation(TargetingLocation targetingLocation) {
@@ -87,5 +97,31 @@ public class TargetingLocationService {
     // 회사 존재 여부 확인
     public boolean companyExists(UUID companyId) {
         return companyRepository.existsById(companyId);
+    }
+
+    // 타겟팅 위치별 고객 목록 조회
+    public List<Map<String, Object>> getCustomersByTargeting(UUID targetingId) {
+        Optional<TargetingLocation> targetingLocation = targetingLocationRepository.findById(targetingId);
+        if (targetingLocation.isPresent()) {
+            TargetingLocation location = targetingLocation.get();
+            return customerRepository.findCustomersInRadiusWithDistance(
+                location.getCenterLat(),
+                location.getCenterLng(),
+                location.getRadiusM()
+            );
+        }
+        return List.of();
+    }
+
+    // 타겟팅 위치별 캠페인 목록 조회
+    public List<Map<String, Object>> getCampaignsByTargeting(UUID targetingId) {
+        return campaignRepository.findByTargetingLocationId(targetingId);
+    }
+    
+    /**
+     * 타겟팅 위치 개수 조회
+     */
+    public long getTargetingLocationsCount() {
+        return targetingLocationRepository.count();
     }
 }

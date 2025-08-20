@@ -147,9 +147,19 @@ public class CustomerController {
     public ResponseEntity<?> getCustomersNearLocation(
             @RequestParam Double lat,
             @RequestParam Double lng,
-            @RequestParam Integer radiusM) {
+            @RequestParam(required = false) Double radius,
+            @RequestParam(required = false) Integer radiusM) {
         try {
-            List<Customer> customers = customerService.getCustomersNearLocation(lat, lng, radiusM);
+            // radius 파라미터가 있으면 radiusM으로 변환, 없으면 기본값 사용
+            Integer finalRadiusM = radiusM;
+            if (radius != null && radiusM == null) {
+                finalRadiusM = (int) (radius * 1000); // km를 m로 변환
+            }
+            if (finalRadiusM == null) {
+                finalRadiusM = 5000; // 기본값 5km
+            }
+            
+            List<Customer> customers = customerService.getCustomersNearLocation(lat, lng, finalRadiusM);
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "data", customers,

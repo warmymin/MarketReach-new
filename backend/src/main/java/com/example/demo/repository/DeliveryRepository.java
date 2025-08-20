@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     
     // 캠페인별 발송 목록 조회
-    List<Delivery> findByTargetingLocationIdOrderByCreatedAtDesc(UUID targetingLocationId);
+    List<Delivery> findByCampaignIdOrderByCreatedAtDesc(UUID campaignId);
     
     // 상태별 발송 목록 조회
     List<Delivery> findByStatusOrderByCreatedAtDesc(DeliveryStatus status);
@@ -28,7 +28,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     long countByStatus(DeliveryStatus status);
     
     // 캠페인별 상태별 발송 건수 조회
-    long countByTargetingLocationIdAndStatus(UUID targetingLocationId, DeliveryStatus status);
+    long countByCampaignIdAndStatus(UUID campaignId, DeliveryStatus status);
     
     // 오늘 발송된 건수 조회
     @Query("SELECT COUNT(d) FROM Delivery d WHERE CAST(d.createdAt AS DATE) = CURRENT_DATE")
@@ -43,11 +43,15 @@ public interface DeliveryRepository extends JpaRepository<Delivery, UUID> {
     // 최근 30분간 5분 단위 발송 통계
     @Query("SELECT " +
            "FLOOR(EXTRACT(MINUTE FROM d.createdAt) / 5) * 5 as timeSlot, " +
-           "d.status, " +
+           "CAST(d.status AS string) as status, " +
            "COUNT(d) as count " +
            "FROM Delivery d " +
            "WHERE d.createdAt >= :startTime " +
            "GROUP BY FLOOR(EXTRACT(MINUTE FROM d.createdAt) / 5) * 5, d.status " +
            "ORDER BY timeSlot, d.status")
     List<Object[]> getRealtimeDeliveryStats(@Param("startTime") LocalDateTime startTime);
+
+    // 타겟팅 위치별 발송 목록 조회 (Campaign을 통해)
+    @Query("SELECT d FROM Delivery d JOIN d.campaign c WHERE c.targetingLocation.id = :targetingLocationId")
+    List<Delivery> findByCampaignTargetingLocationId(@Param("targetingLocationId") UUID targetingLocationId);
 }

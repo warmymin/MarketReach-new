@@ -87,8 +87,8 @@ export default function CampaignPage() {
                   <p className="campaign-message">{campaign.message}</p>
                   <div className="campaign-location"><MapPin size={14} /><span>{campaign.location}</span></div>
                   <div className="campaign-stats">
-                    <div className="stat"><Send size={14} /><span>{campaign.sentCount.toLocaleString()}건 발송</span></div>
-                    <div className="stat"><BarChart3 size={14} /><span>성공률 {campaign.successRate}%</span></div>
+                    <div className="stat"><Send size={14} /><span>{(campaign.sentCount || 0).toLocaleString()}건 발송</span></div>
+                    <div className="stat"><BarChart3 size={14} /><span>성공률 {campaign.successRate || 0}%</span></div>
                   </div>
                   <div className="campaign-footer">
                     <div className="campaign-date"><Calendar size={14} /><span>{campaign.date}</span></div>

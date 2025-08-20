@@ -46,30 +46,33 @@ public class CampaignController {
             System.out.println("=== 캠페인 생성 요청 시작 ===");
             System.out.println("받은 데이터: " + requestData);
             
-            // Map에서 Campaign 객체 생성
+            // TargetingLocation 먼저 조회
+            if (requestData.get("targetingLocationId") == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "타겟팅 위치 ID가 필요합니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            UUID targetingId = UUID.fromString((String) requestData.get("targetingLocationId"));
+            Optional<TargetingLocation> targetingLocationOpt = targetingLocationService.getTargetingLocationById(targetingId);
+            
+            if (targetingLocationOpt.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "타겟팅 위치를 찾을 수 없습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            TargetingLocation targetingLocation = targetingLocationOpt.get();
+            
+            // Campaign 객체 생성
             Campaign campaign = new Campaign();
             campaign.setName((String) requestData.get("name"));
             campaign.setMessage((String) requestData.get("message"));
             campaign.setStatus("DRAFT"); // 기본 상태
-            
-            // Company 설정 (첫 번째 회사 사용)
-            Company defaultCompany = new Company();
-            defaultCompany.setId(UUID.fromString("55006cf8-2322-4901-b76c-e7f2fd83ed94"));
-            campaign.setCompany(defaultCompany);
-            
-            // TargetingLocation 설정
-            if (requestData.get("targetingLocationId") != null) {
-                UUID targetingId = UUID.fromString((String) requestData.get("targetingLocationId"));
-                Optional<TargetingLocation> targetingLocation = targetingLocationService.getTargetingLocationById(targetingId);
-                if (targetingLocation.isPresent()) {
-                    campaign.setTargetingLocation(targetingLocation.get());
-                } else {
-                    Map<String, Object> response = new HashMap<>();
-                    response.put("success", false);
-                    response.put("message", "타겟팅 위치를 찾을 수 없습니다.");
-                    return ResponseEntity.badRequest().body(response);
-                }
-            }
+            campaign.setTargetingLocation(targetingLocation);
+            campaign.setCompany(targetingLocation.getCompany()); // ✅ 핵심: 타겟팅 위치의 회사를 캠페인 회사로 설정
             
             Campaign created = campaignService.createCampaign(campaign);
             return ResponseEntity.status(CREATED).body(Map.of(
@@ -125,6 +128,23 @@ public class CampaignController {
     @GetMapping("/search/name")
     public ResponseEntity<?> searchCampaignsByName(@RequestParam String name) {
         return ResponseEntity.ok(Map.of("success", true, "data", campaignService.searchCampaignsByName(name)));
+    }
+
+    // 6) 최근 캠페인 조회
+    @GetMapping("/recent")
+    public ResponseEntity<?> getRecentCampaigns() {
+        try {
+            List<Campaign> recentCampaigns = campaignService.getRecentCampaigns();
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", recentCampaigns
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "최근 캠페인 조회 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
     }
 
 

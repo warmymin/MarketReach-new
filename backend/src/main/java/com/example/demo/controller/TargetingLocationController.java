@@ -50,8 +50,11 @@ public class TargetingLocationController {
             targetingLocation.setMemo((String) requestData.get("memo"));
             
             // 회사 정보 설정 (첫 번째 회사 사용)
-            Company defaultCompany = new Company();
-            defaultCompany.setId(UUID.fromString("55006cf8-2322-4901-b76c-e7f2fd83ed94"));
+            List<Company> companies = companyService.getAllCompanies();
+            if (companies.isEmpty()) {
+                throw new RuntimeException("회사가 존재하지 않습니다. 먼저 회사를 생성해주세요.");
+            }
+            Company defaultCompany = companies.get(0);
             targetingLocation.setCompany(defaultCompany);
             
             TargetingLocation created = targetingLocationService.createTargetingLocation(targetingLocation);
@@ -230,6 +233,44 @@ public class TargetingLocationController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "예상 도달 고객 수 계산 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // 타겟팅 위치별 고객 목록 조회
+    @GetMapping("/{id}/customers")
+    public ResponseEntity<Map<String, Object>> getCustomersByTargeting(@PathVariable UUID id) {
+        try {
+            List<Map<String, Object>> customers = targetingLocationService.getCustomersByTargeting(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", customers);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "타겟팅 위치별 고객 조회 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // 타겟팅 위치별 캠페인 목록 조회
+    @GetMapping("/{id}/campaigns")
+    public ResponseEntity<Map<String, Object>> getCampaignsByTargeting(@PathVariable UUID id) {
+        try {
+            List<Map<String, Object>> campaigns = targetingLocationService.getCampaignsByTargeting(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", campaigns);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "타겟팅 위치별 캠페인 조회 실패: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }

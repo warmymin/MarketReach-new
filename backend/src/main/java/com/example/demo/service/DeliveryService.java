@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Service
 public class DeliveryService {
@@ -33,6 +34,9 @@ public class DeliveryService {
     @Autowired
     private TargetingLocationRepository targetingLocationRepository;
     
+    @Autowired
+    private DeliveryStreamService deliveryStreamService;
+    
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
     
     /**
@@ -43,23 +47,16 @@ public class DeliveryService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
         
-        System.out.println("=== 캠페인 발송 시작 ===");
-        System.out.println("캠페인 ID: " + campaignId);
-        System.out.println("캠페인 이름: " + campaign.getName());
-        System.out.println("타겟팅 위치: " + (campaign.getTargetingLocation() != null ? campaign.getTargetingLocation().getName() : "null"));
-        
-        // 캠페인 상태를 "IN_PROGRESS"로 변경
-        campaign.setStatus("IN_PROGRESS");
-        campaignRepository.save(campaign);
-        
-        // 타겟팅 위치가 없으면 오류
         if (campaign.getTargetingLocation() == null) {
-            throw new RuntimeException("캠페인에 타겟팅 위치가 설정되지 않았습니다.");
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalDeliveries", 0);
+            result.put("sentCount", 0);
+            result.put("failedCount", 0);
+            result.put("pendingCount", 0);
+            result.put("successRate", 0.0);
+            result.put("message", "타겟팅 위치가 설정되지 않았습니다.");
+            return result;
         }
-        
-        System.out.println("타겟팅 위치 정보:");
-        System.out.println("- 중심점: " + campaign.getTargetingLocation().getCenterLat() + ", " + campaign.getTargetingLocation().getCenterLng());
-        System.out.println("- 반경: " + campaign.getTargetingLocation().getRadiusM() + "m");
         
         // 타겟팅 위치의 반경 내 고객들 조회
         List<Customer> targetCustomers = customerRepository.findCustomersNearLocation(
@@ -68,16 +65,7 @@ public class DeliveryService {
                 campaign.getTargetingLocation().getRadiusM()
         );
         
-        System.out.println("타겟 고객 수: " + targetCustomers.size());
-        for (Customer customer : targetCustomers) {
-            System.out.println("- 고객: " + customer.getName() + " (" + customer.getLat() + ", " + customer.getLng() + ")");
-        }
-        
         if (targetCustomers.isEmpty()) {
-            // 타겟 고객이 없으면 캠페인 상태를 "COMPLETED"로 변경하고 빈 결과 반환
-            campaign.setStatus("COMPLETED");
-            campaignRepository.save(campaign);
-            
             Map<String, Object> result = new HashMap<>();
             result.put("totalDeliveries", 0);
             result.put("sentCount", 0);
@@ -113,20 +101,42 @@ public class DeliveryService {
             } catch (Exception e) {
                 System.err.println("발송 처리 중 오류: " + e.getMessage());
                 // 실패한 발송 처리
-                Delivery failedDelivery = new Delivery();
+                Delivery failedDelivery = new Delivery(campaign, null);
                 failedDelivery.setStatus(DeliveryStatus.FAILED);
                 failedDelivery.setErrorCode("SIMULATION_ERROR");
                 failedDelivery.setCreatedAt(LocalDateTime.now());
-                failedDelivery.setTargetingLocation(campaign.getTargetingLocation());
-                failedDelivery.setMessage(campaign.getMessage());
+                failedDelivery.setMessageTextSent(campaign.getMessage());
                 deliveries.add(deliveryRepository.save(failedDelivery));
             }
         }
         
         // 통계 계산
-        long sentCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.SENT).count();
-        long failedCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.FAILED).count();
-        long pendingCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.PENDING).count();
+        long sentCount = 0;
+        long failedCount = 0;
+        long pendingCount = 0;
+        
+        for (Delivery delivery : deliveries) {
+            try {
+                switch (delivery.getStatus()) {
+                    case SENT:
+                    case SUCCESS:
+                        sentCount++;
+                        break;
+                    case FAILED:
+                        failedCount++;
+                        break;
+                    case PENDING:
+                        pendingCount++;
+                        break;
+                    default:
+                        failedCount++;
+                        break;
+                }
+            } catch (Exception e) {
+                failedCount++;
+            }
+        }
+        
         double successRate = calculateSuccessRate(deliveries);
         
         System.out.println("발송 결과:");
@@ -159,10 +169,8 @@ public class DeliveryService {
      */
     private Delivery simulateDeliveryToCustomer(Campaign campaign, Customer customer) {
         try {
-            Delivery delivery = new Delivery();
-            delivery.setTargetingLocation(campaign.getTargetingLocation());
-            delivery.setCustomer(customer);
-            delivery.setMessage(campaign.getMessage());
+            Delivery delivery = new Delivery(campaign, customer);
+            delivery.setMessageTextSent(campaign.getMessage());
             delivery.setCreatedAt(LocalDateTime.now());
             
             // 랜덤하게 성공/실패 결정 (85% 성공률)
@@ -181,13 +189,24 @@ public class DeliveryService {
             } else {
                 // 실패
                 delivery.setStatus(DeliveryStatus.FAILED);
-                delivery.setErrorCode(getRandomErrorCode());
+                delivery.setErrorCode("SIMULATION_FAILED");
             }
             
-            return deliveryRepository.save(delivery);
+            Delivery saved = deliveryRepository.save(delivery);
+            try {
+                Map<String, Object> event = new HashMap<>();
+                event.put("type", "DELIVERY_CREATED");
+                event.put("id", saved.getId());
+                event.put("campaignId", campaign.getId());
+                event.put("customerId", customer.getId());
+                event.put("status", saved.getStatus().name());
+                event.put("createdAt", saved.getCreatedAt());
+                deliveryStreamService.publish(event);
+            } catch (Exception ignored) {}
+            return saved;
         } catch (Exception e) {
-            System.err.println("고객 발송 시뮬레이션 오류: " + e.getMessage());
-        return null;
+            System.err.println("고객 발송 시뮬레이션 중 오류: " + e.getMessage());
+            return null;
         }
     }
 
@@ -210,7 +229,19 @@ public class DeliveryService {
      */
     private double calculateSuccessRate(List<Delivery> deliveries) {
         if (deliveries.isEmpty()) return 0.0;
-        long sentCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.SENT).count();
+        
+        long sentCount = 0;
+        for (Delivery delivery : deliveries) {
+            try {
+                if (delivery.getStatus() == DeliveryStatus.SENT) {
+                    sentCount++;
+                }
+            } catch (Exception e) {
+                // enum 변환 오류 시 무시
+                System.err.println("calculateSuccessRate에서 DeliveryStatus 처리 중 오류: " + e.getMessage());
+            }
+        }
+        
         return (double) sentCount / deliveries.size() * 100;
     }
     
@@ -300,16 +331,7 @@ public class DeliveryService {
      * 캠페인별 발송 목록 조회
      */
     public List<Delivery> getDeliveriesByCampaign(UUID campaignId) {
-        Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
-        
-        if (campaign.getTargetingLocation() == null) {
-            return new ArrayList<>();
-        }
-        
-        return deliveryRepository.findByTargetingLocationIdOrderByCreatedAtDesc(
-                campaign.getTargetingLocation().getId()
-        );
+        return deliveryRepository.findByCampaignIdOrderByCreatedAtDesc(campaignId);
     }
     
     /**
@@ -326,23 +348,34 @@ public class DeliveryService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("캠페인을 찾을 수 없습니다."));
         
-        if (campaign.getTargetingLocation() == null) {
-            Map<String, Object> emptyStats = new HashMap<>();
-            emptyStats.put("totalDeliveries", 0);
-            emptyStats.put("sentCount", 0);
-            emptyStats.put("failedCount", 0);
-            emptyStats.put("pendingCount", 0);
-            emptyStats.put("successRate", 0.0);
-            return emptyStats;
+        List<Delivery> deliveries = deliveryRepository.findByCampaignIdOrderByCreatedAtDesc(campaignId);
+        
+        long sentCount = 0;
+        long failedCount = 0;
+        long pendingCount = 0;
+        
+        for (Delivery delivery : deliveries) {
+            try {
+                switch (delivery.getStatus()) {
+                    case SENT:
+                    case SUCCESS:
+                        sentCount++;
+                        break;
+                    case FAILED:
+                        failedCount++;
+                        break;
+                    case PENDING:
+                        pendingCount++;
+                        break;
+                    default:
+                        failedCount++;
+                        break;
+                }
+            } catch (Exception e) {
+                failedCount++;
+            }
         }
         
-        List<Delivery> deliveries = deliveryRepository.findByTargetingLocationIdOrderByCreatedAtDesc(
-                campaign.getTargetingLocation().getId()
-        );
-        
-        long sentCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.SENT).count();
-        long failedCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.FAILED).count();
-        long pendingCount = deliveries.stream().filter(d -> d.getStatus() == DeliveryStatus.PENDING).count();
         double successRate = calculateSuccessRate(deliveries);
         
         Map<String, Object> stats = new HashMap<>();
@@ -353,5 +386,106 @@ public class DeliveryService {
         stats.put("successRate", successRate);
         
         return stats;
+    }
+
+    /**
+     * 최근 발송 내역 조회
+     */
+    public List<Delivery> getRecentDeliveries() {
+        return deliveryRepository.findAll().stream()
+                .sorted((d1, d2) -> d2.getCreatedAt().compareTo(d1.getCreatedAt()))
+                .limit(20)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 타겟팅 위치별 발송 통계 조회
+     */
+    public Map<String, Object> getDeliveryStatsByTargeting(UUID targetingId) {
+        List<Delivery> deliveries = deliveryRepository.findByCampaignTargetingLocationId(targetingId);
+        
+        long sentCount = 0;
+        long failedCount = 0;
+        long pendingCount = 0;
+        
+        for (Delivery delivery : deliveries) {
+            try {
+                switch (delivery.getStatus()) {
+                    case SENT:
+                    case SUCCESS:
+                        sentCount++;
+                        break;
+                    case FAILED:
+                        failedCount++;
+                        break;
+                    case PENDING:
+                        pendingCount++;
+                        break;
+                    default:
+                        failedCount++;
+                        break;
+                }
+            } catch (Exception e) {
+                failedCount++;
+            }
+        }
+        
+        double successRate = calculateSuccessRate(deliveries);
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalDeliveries", deliveries.size());
+        stats.put("sentCount", sentCount);
+        stats.put("failedCount", failedCount);
+        stats.put("pendingCount", pendingCount);
+        stats.put("successRate", successRate);
+        
+        return stats;
+    }
+
+    /**
+     * 발송 상태 업데이트
+     */
+    @Transactional
+    public Delivery updateDeliveryStatus(UUID deliveryId, DeliveryStatus newStatus) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new RuntimeException("발송을 찾을 수 없습니다."));
+        
+        delivery.setStatus(newStatus);
+        
+        if (newStatus == DeliveryStatus.SENT) {
+            delivery.setSentAt(LocalDateTime.now());
+        }
+        
+        Delivery updated = deliveryRepository.save(delivery);
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("type", "DELIVERY_UPDATED");
+            event.put("id", updated.getId());
+            event.put("status", updated.getStatus().name());
+            event.put("sentAt", updated.getSentAt());
+            event.put("updatedAt", LocalDateTime.now());
+            deliveryStreamService.publish(event);
+        } catch (Exception ignored) {}
+        return updated;
+    }
+
+    /**
+     * 지역별 분포 통계 조회
+     */
+    public List<Map<String, Object>> getRegionDistribution() {
+        List<Map<String, Object>> distribution = new ArrayList<>();
+        
+        // 서울시 주요 지역별 분포 데이터
+        String[] regions = {"강남구", "서초구", "마포구", "종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구"};
+        
+        for (String region : regions) {
+            Map<String, Object> regionData = new HashMap<>();
+            regionData.put("region", region);
+            regionData.put("count", (int) (Math.random() * 100) + 50); // 임시 데이터
+            regionData.put("percentage", Math.round((Math.random() * 20 + 5) * 10.0) / 10.0); // 5-25% 범위
+            distribution.add(regionData);
+        }
+        
+        return distribution;
     }
 }
