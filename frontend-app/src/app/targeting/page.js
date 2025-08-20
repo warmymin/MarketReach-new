@@ -99,49 +99,64 @@ export default function TargetingPage() {
            targeting.memo?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // 타겟팅 위치 삭제
-  const handleDeleteTargeting = async (id) => {
-    if (window.confirm('정말로 이 타겟팅을 삭제하시겠습니까?')) {
-      try {
-        const result = await apiService.deleteTargetingLocation(id);
-        if (result) {
-          alert('타겟팅이 성공적으로 삭제되었습니다.');
-          // 목록 새로고침
-          const updatedData = await apiService.getTargetingLocations();
-          setTargetingLocations(updatedData);
-        }
-      } catch (error) {
-        console.error('타겟팅 삭제 오류:', error);
-        alert('타겟팅 삭제에 실패했습니다: ' + error.message);
+  // 타겟팅 삭제
+  const handleDeleteTargeting = async (targetingId, targetingName) => {
+    if (!confirm(`"${targetingName}" 타겟팅을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const result = await apiService.deleteTargetingLocation(targetingId);
+      
+      if (result && result.success) {
+        // 목록에서 삭제된 타겟팅 제거
+        setTargetingLocations(prev => prev.filter(targeting => targeting.id !== targetingId));
+        alert('타겟팅이 성공적으로 삭제되었습니다.');
+      } else {
+        alert('타겟팅 삭제에 실패했습니다.');
       }
+    } catch (error) {
+      console.error('타겟팅 삭제 오류:', error);
+      alert('타겟팅 삭제에 실패했습니다: ' + error.message);
     }
   };
 
+
+
   return (
-    <div className="page-content">
-      <div className="page-header">
-                  <div>
-            <h1 className="page-title">🎯 위치 기반 타겟팅 관리</h1>
-            <p className="page-subtitle">지역 기반 고객 타겟팅을 관리하세요</p>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto py-12 px-6">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <h1 className="text-4xl font-semibold text-gray-900 mb-3">위치 기반 타겟팅</h1>
+            <p className="text-lg text-gray-600 font-light">지역 기반 고객 타겟팅을 관리하세요</p>
           </div>
-      </div>
-      <div className="card">
-        <div className="card-header">
-          <div className="search-filter">
-            <div className="search-box">
-              <Search size={16} />
+          <Link 
+            href="/targeting-location" 
+            className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors duration-200"
+          >
+            <MapPin size={16} className="mr-2" />
+            새 타겟팅 생성
+          </Link>
+        </div>
+
+        {/* 검색 및 필터 */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400" />
+              </div>
               <input 
                 type="text" 
                 placeholder="타겟팅 이름, 메모로 검색..." 
                 value={searchTerm} 
                 onChange={e => setSearchTerm(e.target.value)} 
-                className="input" 
+                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:border-gray-400 transition-colors text-sm" 
               />
             </div>
           </div>
-          <Link href="/targeting-location" className="btn btn-primary">
-            <MapPin size={16} />새 타겟팅 생성
-          </Link>
         </div>
         <div className="table-container">
           {loading ? (
@@ -209,7 +224,7 @@ export default function TargetingPage() {
                             <Edit size={14} />
                           </Link>
                           <button 
-                            onClick={() => handleDeleteTargeting(targeting.id)} 
+                            onClick={() => handleDeleteTargeting(targeting.id, targeting.name)} 
                             className="btn btn-danger btn-sm"
                           >
                             <Trash2 size={14} />

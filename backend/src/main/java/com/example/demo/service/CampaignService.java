@@ -43,24 +43,80 @@ public class CampaignService {
 
 
     public Campaign updateCampaign(UUID id, Campaign campaignDetails) {
-        Optional<Campaign> campaign = campaignRepository.findById(id);
-        if (campaign.isPresent()) {
-            Campaign existingCampaign = campaign.get();
-            existingCampaign.setName(campaignDetails.getName());
-            existingCampaign.setMessage(campaignDetails.getMessage());
-            existingCampaign.setTargetingLocation(campaignDetails.getTargetingLocation());
-    
-            return campaignRepository.save(existingCampaign);
+        try {
+            System.out.println("CampaignService - 수정 요청 ID: " + id);
+            
+            Optional<Campaign> campaign = campaignRepository.findById(id);
+            if (campaign.isPresent()) {
+                Campaign existingCampaign = campaign.get();
+                
+                System.out.println("CampaignService - 기존 캠페인 정보:");
+                System.out.println("  이름: " + existingCampaign.getName());
+                System.out.println("  메시지: " + existingCampaign.getMessage());
+                System.out.println("  상태: " + existingCampaign.getStatus());
+                
+                // 업데이트할 필드들
+                if (campaignDetails.getName() != null) {
+                    existingCampaign.setName(campaignDetails.getName());
+                }
+                if (campaignDetails.getMessage() != null) {
+                    existingCampaign.setMessage(campaignDetails.getMessage());
+                }
+                if (campaignDetails.getTargetingLocation() != null) {
+                    existingCampaign.setTargetingLocation(campaignDetails.getTargetingLocation());
+                }
+                if (campaignDetails.getStatus() != null) {
+                    existingCampaign.setStatus(campaignDetails.getStatus());
+                }
+                
+                System.out.println("CampaignService - 수정된 캠페인 정보:");
+                System.out.println("  이름: " + existingCampaign.getName());
+                System.out.println("  메시지: " + existingCampaign.getMessage());
+                System.out.println("  상태: " + existingCampaign.getStatus());
+                
+                Campaign updated = campaignRepository.save(existingCampaign);
+                System.out.println("CampaignService - 캠페인 수정 완료");
+                return updated;
+            } else {
+                System.out.println("CampaignService - 캠페인을 찾을 수 없음: " + id);
+                return null;
+            }
+        } catch (Exception e) {
+            System.err.println("CampaignService - 수정 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        return null;
     }
 
     public boolean deleteCampaign(UUID id) {
-        if (campaignRepository.existsById(id)) {
-            campaignRepository.deleteById(id);
-            return true;
+        try {
+            System.out.println("CampaignService - 삭제 요청 ID: " + id);
+            
+            if (campaignRepository.existsById(id)) {
+                System.out.println("CampaignService - 캠페인 존재 확인됨, 삭제 시작");
+                
+                // 캠페인을 찾아서 관련된 배송 데이터도 함께 삭제
+                Optional<Campaign> campaignOpt = campaignRepository.findById(id);
+                if (campaignOpt.isPresent()) {
+                    Campaign campaign = campaignOpt.get();
+                    
+                    // 관련된 배송 데이터 삭제 (CASCADE 대신 수동으로 처리)
+                    // 이 부분은 DeliveryService를 주입받아서 처리하는 것이 좋지만,
+                    // 현재는 간단히 JPA의 cascade 설정을 활용
+                    campaignRepository.delete(campaign);
+                }
+                
+                System.out.println("CampaignService - 캠페인 및 관련 데이터 삭제 완료");
+                return true;
+            } else {
+                System.out.println("CampaignService - 캠페인을 찾을 수 없음: " + id);
+                return false;
+            }
+        } catch (Exception e) {
+            System.err.println("CampaignService - 삭제 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-        return false;
     }
 
     /**

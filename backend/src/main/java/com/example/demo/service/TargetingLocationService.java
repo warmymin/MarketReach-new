@@ -2,6 +2,7 @@ package com.example.demo.service;
 
 import com.example.demo.entity.TargetingLocation;
 import com.example.demo.entity.Company;
+import com.example.demo.entity.Campaign;
 import com.example.demo.repository.TargetingLocationRepository;
 import com.example.demo.repository.CompanyRepository;
 import com.example.demo.repository.CustomerRepository;
@@ -78,6 +79,15 @@ public class TargetingLocationService {
     // 타겟팅 위치 삭제
     public boolean deleteTargetingLocation(UUID id) {
         if (targetingLocationRepository.existsById(id)) {
+            // 해당 타겟팅 위치를 참조하는 캠페인들의 타겟팅 위치를 null로 설정
+            List<Campaign> campaigns = campaignRepository.findAll();
+            for (Campaign campaign : campaigns) {
+                if (campaign.getTargetingLocation() != null && campaign.getTargetingLocation().getId().equals(id)) {
+                    campaign.setTargetingLocation(null);
+                    campaignRepository.save(campaign);
+                }
+            }
+            
             targetingLocationRepository.deleteById(id);
             return true;
         }

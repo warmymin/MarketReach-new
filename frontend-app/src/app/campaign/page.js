@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Search, Filter, Edit, Trash2, MapPin, Send, BarChart3, Calendar, Settings } from 'lucide-react';
 // import apiService from '@/lib/api'; // Next.js에서는 lib/api.js로 이동 예정
 
@@ -89,13 +90,22 @@ export default function CampaignPage() {
                         {campaign.status}
                       </span>
                     </div>
-                    {/* 우측: 액션 버튼 */}
-                    <div className="flex space-x-2">
-                      <button className="p-1 text-gray-600 hover:text-gray-800" title="편집">
-                        <Edit size={16} />
-                      </button>
-                      <button className="p-1 text-gray-600 hover:text-red-600" title="삭제">
-                        <Trash2 size={16} />
+                                        {/* 우측: 액션 버튼 */}
+                    <div className="flex items-center gap-1">
+                      {/* 편집 버튼 - 초안 상태에서만 표시 */}
+                      {campaign.status === 'DRAFT' && (
+                        <Link 
+                          href={`/campaigns/edit/${campaign.id}`} 
+                          className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                          title="편집"
+                        >
+                          <Edit size={14} className="mr-1" />
+                          편집
+                        </Link>
+                      )}
+                      <button className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors" title="삭제">
+                        <Trash2 size={14} className="mr-1" />
+                        삭제
                       </button>
                     </div>
                   </div>

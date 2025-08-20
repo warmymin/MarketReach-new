@@ -59,17 +59,38 @@ export default function CampaignsPage() {
 
   // 캠페인 삭제
   const handleDeleteCampaign = async (id) => {
-    if (window.confirm('정말로 이 캠페인을 삭제하시겠습니까?')) {
+    console.log('삭제 요청된 캠페인 ID:', id);
+    console.log('삭제 요청된 캠페인 ID 타입:', typeof id);
+    
+    const campaign = campaigns.find(c => c.id === id);
+    const campaignName = campaign?.name || '이 캠페인';
+    
+    console.log('찾은 캠페인:', campaign);
+    
+    if (window.confirm(`정말로 "${campaignName}"을(를) 삭제하시겠습니까?\n\n삭제된 캠페인은 복구할 수 없습니다.`)) {
       try {
+        console.log('API 호출 시작 - 삭제할 ID:', id);
         const result = await apiService.deleteCampaign(id);
+        console.log('삭제 API 응답:', result);
+        
         if (result) {
           alert('캠페인이 성공적으로 삭제되었습니다.');
-          // 목록 새로고침
-          const updatedData = await apiService.getCampaigns();
-          setCampaigns(updatedData);
+          // 목록에서 해당 캠페인 제거
+          setCampaigns(prev => prev.filter(c => c.id !== id));
+          // 통계에서도 제거
+          setCampaignStats(prev => {
+            const newStats = { ...prev };
+            delete newStats[id];
+            return newStats;
+          });
         }
       } catch (error) {
         console.error('캠페인 삭제 오류:', error);
+        console.error('에러 상세 정보:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
         alert('캠페인 삭제에 실패했습니다: ' + error.message);
       }
     }
@@ -144,37 +165,47 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-                  <div>
-            <h1 className="page-title">📢 마케팅 캠페인 관리</h1>
-            <p className="page-subtitle">위치 기반 캠페인을 생성하고 관리하세요</p>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto py-12 px-6">
+        {/* 헤더 */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-semibold text-gray-900 mb-3">
+                마케팅 캠페인
+              </h1>
+              <p className="text-lg text-gray-600 font-light">위치 기반 캠페인을 생성하고 관리하세요</p>
+            </div>
+            <Link
+              href="/campaigns/new"
+              className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors duration-200"
+            >
+              <Plus size={16} className="mr-2" />
+              새 캠페인
+            </Link>
           </div>
-        <Link href="/campaigns/new" className="btn btn-primary">
-          <Plus size={16} />
-          새 캠페인 생성
-        </Link>
-      </div>
+        </div>
 
-      {/* 검색 및 필터 */}
-      <div className="card mb-6">
-        <div className="card-body">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="search-box flex-1">
-              <Search size={16} />
+        {/* 검색 및 필터 */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search size={18} className="text-gray-400" />
+              </div>
               <input 
                 type="text" 
                 placeholder="캠페인 이름, 메시지로 검색..." 
                 value={searchTerm} 
                 onChange={e => setSearchTerm(e.target.value)} 
-                className="input" 
+                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:border-gray-400 transition-colors text-sm" 
               />
             </div>
             <div className="flex gap-2">
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="input"
+                className="px-4 py-2.5 border border-gray-200 rounded-md focus:outline-none focus:border-gray-400 transition-colors bg-white text-sm"
               >
                 <option value="all">전체 상태</option>
                 <option value="DRAFT">초안</option>
@@ -185,16 +216,17 @@ export default function CampaignsPage() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* 캠페인 목록 */}
       {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          로딩 중...
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500">로딩 중...</p>
         </div>
       ) : error ? (
-        <div className="text-center py-8 text-red-600">{error}</div>
+        <div className="text-center py-16">
+          <p className="text-sm text-gray-500">{error}</p>
+        </div>
       ) : filteredCampaigns.length > 0 ? (
                     <div className="space-y-6">
           {filteredCampaigns.map(campaign => {
@@ -203,91 +235,90 @@ export default function CampaignsPage() {
             const deliveryStats = getDeliveryStatsDisplay(campaign.id);
             
             return (
-              <div key={campaign.id} className="bg-white rounded-xl border border-gray-200 shadow-md p-6 space-y-4">
+              <div key={campaign.id} className="group border border-gray-200 rounded-lg hover:border-gray-300 transition-all duration-200 p-6 mb-4">
                 {/* 상단 정보 섹션 */}
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between mb-4">
                   {/* 좌측: 타이틀과 상태 뱃지 */}
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{campaign.name}</h3>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black text-white">
-                      {statusInfo.label}
-                    </span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-medium text-gray-900">{campaign.name}</h3>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        campaign.status === 'DRAFT' ? 'bg-gray-100 text-gray-700' :
+                        campaign.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
+                        campaign.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">
+                      {campaign.createdAt ? 
+                        new Date(campaign.createdAt).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        }) : '날짜 없음'
+                      }
+                    </p>
                   </div>
                   {/* 우측: 액션 버튼 */}
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleSendCampaign(campaign.id)} 
-                      className="p-1 text-gray-600 hover:text-gray-800"
-                      title="발송"
-                      disabled={campaign.status === 'IN_PROGRESS'}
-                    >
-                      <Send size={16} />
-                    </button>
-                    <Link 
-                      href={`/campaigns/edit/${campaign.id}`} 
-                      className="p-1 text-gray-600 hover:text-gray-800"
-                      title="편집"
-                    >
-                      <Edit size={16} />
-                    </Link>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {/* 발송 버튼 - 초안 상태일 때만 표시 */}
+                    {campaign.status === 'DRAFT' && (
+                      <button 
+                        onClick={() => handleSendCampaign(campaign.id)} 
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        title="발송"
+                      >
+                        <Send size={14} className="mr-1" />
+                        발송
+                      </button>
+                    )}
+                    
+                    {/* 편집 버튼 - 초안 상태에서만 표시 */}
+                    {campaign.status === 'DRAFT' && (
+                      <Link 
+                        href={`/campaigns/edit/${campaign.id}`} 
+                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        title="편집"
+                      >
+                        <Edit size={14} className="mr-1" />
+                        편집
+                      </Link>
+                    )}
+                    
+                    {/* 삭제 버튼 - 모든 상태에서 표시 */}
                     <button 
                       onClick={() => handleDeleteCampaign(campaign.id)} 
-                      className="p-1 text-gray-600 hover:text-red-600"
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                       title="삭제"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} className="mr-1" />
+                      삭제
                     </button>
                   </div>
                 </div>
                 
-                {/* 캠페인 설명 박스 */}
-                <div className="bg-gray-100 rounded-lg py-3 px-4">
-                  <p className="text-sm text-gray-700">
-                    🌞 {getMessageSummary(campaign.message)}
+                {/* 캠페인 설명 */}
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {getMessageSummary(campaign.message)}
                   </p>
                 </div>
                 
-                {/* 하단 3열 정보 */}
-                <div className="grid grid-cols-3 gap-4">
-                  {/* 왼쪽: 매장명과 지역 */}
-                  <div className="flex items-start gap-2">
-                    <Target size={16} className="text-gray-500 mt-0.5" />
-                    <div>
-                      <div className="font-medium text-gray-900 text-sm">
-                        {campaign.targetingLocation ? campaign.targetingLocation.name : '강남 핫플레이스'}
-                      </div>
-                      <div className="text-sm text-gray-500">강남구 역삼동</div>
-                    </div>
+                {/* 하단 정보 */}
+                <div className="flex items-center gap-6 text-sm text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <Target size={14} />
+                    <span>{campaign.targetingLocation ? campaign.targetingLocation.name : '강남 핫플레이스'}</span>
                   </div>
-
-                  {/* 중앙: 발송 건수 */}
-                  <div className="flex items-start gap-2">
-                    <Send size={16} className="text-gray-500 mt-0.5" />
-                    <div className="text-sm text-gray-900">
-                      {deliveryStats.totalDeliveries.toLocaleString()}건 발송
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Send size={14} />
+                    <span>{deliveryStats.totalDeliveries.toLocaleString()}건 발송</span>
                   </div>
-
-                  {/* 오른쪽: 성과율과 완료시간 */}
-                  <div className="space-y-1">
-                    <div className="flex items-start gap-2">
-                      <BarChart3 size={16} className="text-gray-500 mt-0.5" />
-                      <div className="text-sm text-gray-900">성과율 {deliveryStats.successRate}</div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Clock size={16} className="text-gray-500 mt-0.5" />
-                      <div className="text-sm text-gray-500">
-                        {campaign.createdAt ? 
-                          new Date(campaign.createdAt).toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          }) : '2024-08-15 14:00'
-                        }
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={14} />
+                    <span>성과율 {deliveryStats.successRate}</span>
                   </div>
                 </div>
               </div>
@@ -295,20 +326,23 @@ export default function CampaignsPage() {
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <MessageSquare size={48} className="text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-600 mb-2">
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MessageSquare size={24} className="text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
             캠페인이 없습니다
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-gray-500 mb-6 text-sm">
             첫 번째 마케팅 캠페인을 생성해보세요
           </p>
-          <Link href="/campaigns/new" className="btn btn-primary">
-            <Plus size={16} />
-            새 캠페인 생성하기
+          <Link href="/campaigns/new" className="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
+            <Plus size={16} className="mr-2" />
+            새 캠페인 생성
           </Link>
         </div>
       )}
+      </div>
     </div>
   );
 }

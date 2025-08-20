@@ -28,7 +28,7 @@ public class Campaign {
     private String message;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "targeting_location_id")
+    @JoinColumn(name = "targeting_location_id", nullable = true)
     @JsonBackReference("targeting-location-campaigns")
     private TargetingLocation targetingLocation;
     
@@ -39,12 +39,16 @@ public class Campaign {
     private String status = "DRAFT";
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
+    @JoinColumn(name = "company_id", nullable = true)
     @JsonBackReference("company-campaigns")
     private Company company;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    @OneToMany(mappedBy = "campaign", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("campaign-deliveries")
+    private List<Delivery> deliveries = new ArrayList<>();
     
 
     
@@ -146,6 +150,14 @@ public class Campaign {
     
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    
+    public List<Delivery> getDeliveries() {
+        return deliveries;
+    }
+    
+    public void setDeliveries(List<Delivery> deliveries) {
+        this.deliveries = deliveries;
     }
     
 

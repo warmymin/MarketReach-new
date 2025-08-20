@@ -180,148 +180,139 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="page-content">
-      <div className="page-header">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-white">
+      <div className="max-w-6xl mx-auto py-12 px-6">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-12">
           <div>
-            <h1 className="page-title">🎯 마케팅 대시보드</h1>
-            <p className="page-subtitle">위치 기반 마케팅 캠페인 현황을 한눈에 확인하세요</p>
+            <h1 className="text-4xl font-semibold text-gray-900 mb-3">마케팅 대시보드</h1>
+            <p className="text-lg text-gray-600 font-light">위치 기반 마케팅 캠페인 현황을 한눈에 확인하세요</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={handleCreateDummyData}
-              className="btn btn-secondary"
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
             >
-              📊 더미 데이터 생성
+              더미 데이터 생성
             </button>
           </div>
         </div>
-      </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <div className="metric">
-              <div className="metric-value text-4xl font-bold text-blue-600">{statistics.companies}</div>
-              <div className="metric-label text-gray-600 font-medium">🏢 등록된 회사</div>
+        {/* 통계 카드 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Building2 size={20} className="text-blue-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{statistics.companies}</div>
+                <div className="text-sm text-gray-600">등록된 회사</div>
+              </div>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Building2 size={28} className="text-blue-600" />
+          </div>
+          
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Users size={20} className="text-green-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{statistics.customers}</div>
+                <div className="text-sm text-gray-600">등록된 고객</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Send size={20} className="text-purple-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{statistics.campaigns}</div>
+                <div className="text-sm text-gray-600">생성된 캠페인</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Target size={20} className="text-orange-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">{statistics.targetingLocations || 0}</div>
+                <div className="text-sm text-gray-600">타겟팅 위치</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <div className="metric">
-              <div className="metric-value text-4xl font-bold text-green-600">{statistics.customers}</div>
-              <div className="metric-label text-gray-600 font-medium">👥 등록된 고객</div>
+        {/* 발송 현황 상세 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">총 발송 건수</h2>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Send size={20} className="text-blue-600" />
+              </div>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <Users size={28} className="text-green-600" />
+            <div className="text-center">
+              <div className="text-3xl font-semibold text-gray-900 mb-2">{deliveryStats.totalDeliveries}</div>
+              <div className="text-sm text-gray-600">전체 발송</div>
             </div>
           </div>
-        </div>
 
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <div className="metric">
-              <div className="metric-value text-4xl font-bold text-purple-600">{statistics.campaigns}</div>
-              <div className="metric-label text-gray-600 font-medium">🎯 진행 중인 캠페인</div>
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">성공률</h2>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <TrendingUp size={20} className="text-green-600" />
+              </div>
             </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Target size={28} className="text-purple-600" />
+            <div className="text-center">
+              <div className="text-3xl font-semibold text-gray-900 mb-2">{deliveryStats.successRate.toFixed(1)}%</div>
+              <div className="text-sm text-gray-600">발송 성공률</div>
             </div>
           </div>
-        </div>
 
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <div className="metric">
-              <div className="metric-value text-4xl font-bold text-red-600">{statistics.targetingLocations || 0}</div>
-              <div className="metric-label text-gray-600 font-medium">📍 타겟팅 위치</div>
+          <div className="border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-gray-900">발송 상태</h2>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <Target size={20} className="text-purple-600" />
+              </div>
             </div>
-            <div className="p-3 bg-red-100 rounded-full">
-              <MapPin size={28} className="text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 발송 현황 상세 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <h2 className="card-title">📤 총 발송 건수</h2>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Send size={24} className="text-blue-600" />
-            </div>
-          </div>
-          <div className="p-6 text-center">
-            <div className="metric">
-              <div className="metric-value text-5xl font-bold text-blue-600 mb-2">{deliveryStats.totalDeliveries}</div>
-              <div className="metric-label text-gray-600 font-medium text-lg">전체 발송</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <h2 className="card-title">✅ 성공률</h2>
-            <div className="p-3 bg-green-100 rounded-full">
-              <TrendingUp size={24} className="text-green-600" />
-            </div>
-          </div>
-          <div className="p-6 text-center">
-            <div className="metric">
-              <div className="metric-value text-5xl font-bold text-green-600 mb-2">{deliveryStats.successRate.toFixed(1)}%</div>
-              <div className="metric-label text-gray-600 font-medium text-lg">발송 성공률</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card transform hover:scale-105 transition-transform duration-300">
-          <div className="card-header">
-            <h2 className="card-title">📊 발송 상태</h2>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Target size={24} className="text-purple-600" />
-            </div>
-          </div>
-          <div className="p-6">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">성공</span>
-                <span className="font-semibold text-green-600">{deliveryStats.sentCount}</span>
+                <span className="text-sm text-gray-600">성공</span>
+                <span className="font-medium text-green-600">{deliveryStats.sentCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">실패</span>
-                <span className="font-semibold text-red-600">{deliveryStats.failedCount}</span>
+                <span className="text-sm text-gray-600">실패</span>
+                <span className="font-medium text-red-600">{deliveryStats.failedCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">대기</span>
-                <span className="font-semibold text-yellow-600">{deliveryStats.pendingCount}</span>
+                <span className="text-sm text-gray-600">대기</span>
+                <span className="font-medium text-yellow-600">{deliveryStats.pendingCount}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* 최근 발송 내역 */}
-      <div className="card transform hover:scale-105 transition-transform duration-300">
-        <div className="card-header">
-          <h2 className="card-title">📋 최근 발송 내역</h2>
-        </div>
-        <div className="p-6">
+        {/* 최근 발송 내역 */}
+        <div className="border border-gray-200 rounded-lg p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">최근 발송 내역</h2>
           {recentDeliveries.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">고객</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">캠페인</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">상태</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">발송 시간</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">고객</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">캠페인</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">상태</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">발송 시간</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -329,24 +320,24 @@ export default function Dashboard() {
                     <tr key={delivery.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center mr-3">
                             <Users size={16} className="text-blue-600" />
                           </div>
-                          <span className="font-medium">{delivery.customer?.name || '알 수 없음'}</span>
+                          <span className="font-medium text-sm">{delivery.customer?.name || '알 수 없음'}</span>
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="text-gray-700">{delivery.campaign?.name || '알 수 없음'}</span>
+                        <span className="text-gray-700 text-sm">{delivery.campaign?.name || '알 수 없음'}</span>
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center">
                           {getStatusIcon(delivery.status)}
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(delivery.status)}`}>
+                          <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${getStatusColor(delivery.status)}`}>
                             {getStatusText(delivery.status)}
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">
+                      <td className="py-3 px-4 text-gray-600 text-sm">
                         {delivery.sentAt ? new Date(delivery.sentAt).toLocaleString('ko-KR') : '-'}
                       </td>
                     </tr>
@@ -356,9 +347,11 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-6xl mb-4">📭</div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">발송 내역이 없습니다</h3>
-              <p className="text-gray-500">캠페인을 발송하면 여기에 내역이 표시됩니다.</p>
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users size={24} className="text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">발송 내역이 없습니다</h3>
+              <p className="text-gray-500 text-sm">캠페인을 발송하면 여기에 내역이 표시됩니다.</p>
             </div>
           )}
         </div>

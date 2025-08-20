@@ -160,22 +160,95 @@ public class CampaignController {
     // 10) 수정
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCampaign(@PathVariable UUID id,
-                                            @RequestBody Campaign campaign) {
+                                            @RequestBody Map<String, Object> requestData) {
         try {
-            Campaign updated = campaignService.updateCampaign(id, campaign);
-            if (updated == null) throw new ResponseStatusException(NOT_FOUND, "캠페인을 찾을 수 없습니다.");
-            return ResponseEntity.ok(Map.of("success", true, "message", "캠페인 정보가 성공적으로 수정되었습니다.", "data", updated));
+            System.out.println("=== 캠페인 수정 요청 시작 ===");
+            System.out.println("캠페인 ID: " + id);
+            System.out.println("받은 데이터: " + requestData);
+            
+            // 기존 캠페인 조회
+            Optional<Campaign> existingCampaignOpt = campaignService.getCampaignById(id);
+            if (existingCampaignOpt.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(Map.of(
+                    "success", false,
+                    "message", "캠페인을 찾을 수 없습니다."
+                ));
+            }
+            
+            Campaign existingCampaign = existingCampaignOpt.get();
+            
+            // 이름과 메시지 업데이트
+            if (requestData.get("name") != null) {
+                existingCampaign.setName((String) requestData.get("name"));
+            }
+            if (requestData.get("message") != null) {
+                existingCampaign.setMessage((String) requestData.get("message"));
+            }
+            
+            // 타겟팅 위치 업데이트 (선택적)
+            if (requestData.get("targetingLocationId") != null) {
+                UUID targetingId = UUID.fromString((String) requestData.get("targetingLocationId"));
+                Optional<TargetingLocation> targetingLocationOpt = targetingLocationService.getTargetingLocationById(targetingId);
+                
+                if (targetingLocationOpt.isPresent()) {
+                    existingCampaign.setTargetingLocation(targetingLocationOpt.get());
+                }
+            }
+            
+            // 상태 업데이트 (선택적)
+            if (requestData.get("status") != null) {
+                existingCampaign.setStatus((String) requestData.get("status"));
+            }
+            
+            Campaign updated = campaignService.updateCampaign(id, existingCampaign);
+            return ResponseEntity.ok(Map.of(
+                "success", true, 
+                "message", "캠페인 정보가 성공적으로 수정되었습니다.", 
+                "data", updated
+            ));
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(BAD_REQUEST, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", "잘못된 요청: " + e.getMessage()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "캠페인 수정 중 오류가 발생했습니다: " + e.getMessage()
+            ));
         }
     }
 
     // 11) 삭제
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCampaign(@PathVariable UUID id) {
-        boolean deleted = campaignService.deleteCampaign(id);
-        if (!deleted) throw new ResponseStatusException(NOT_FOUND, "캠페인을 찾을 수 없습니다.");
-        return ResponseEntity.ok(Map.of("success", true, "message", "캠페인이 성공적으로 삭제되었습니다."));
+        try {
+            System.out.println("=== 캠페인 삭제 요청 시작 ===");
+            System.out.println("삭제 요청된 캠페인 ID: " + id);
+            
+            boolean deleted = campaignService.deleteCampaign(id);
+            
+            if (!deleted) {
+                System.out.println("캠페인을 찾을 수 없음: " + id);
+                return ResponseEntity.status(NOT_FOUND).body(Map.of(
+                    "success", false,
+                    "message", "캠페인을 찾을 수 없습니다."
+                ));
+            }
+            
+            System.out.println("캠페인 삭제 성공: " + id);
+            return ResponseEntity.ok(Map.of(
+                "success", true, 
+                "message", "캠페인이 성공적으로 삭제되었습니다."
+            ));
+        } catch (Exception e) {
+            System.err.println("캠페인 삭제 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "캠페인 삭제 중 오류가 발생했습니다: " + e.getMessage()
+            ));
+        }
     }
     
     // 12) 캠페인 발송 시뮬레이션

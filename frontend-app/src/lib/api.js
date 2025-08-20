@@ -76,21 +76,9 @@ class ApiService {
 
   async createTargetingLocation(targetingLocation) {
     try {
-      const response = await fetch(`${API_BASE_URL}/targeting-locations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(targetingLocation)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('API 응답:', data);
-      return data;
+      const response = await apiClient.post(`/targeting-locations`, targetingLocation);
+      console.log('API 응답:', response.data);
+      return response.data;
     } catch (error) {
       console.error('타겟팅 위치 생성 실패:', error);
       throw error;
@@ -99,21 +87,9 @@ class ApiService {
 
   async updateTargetingLocation(id, targetingLocation) {
     try {
-      const response = await fetch(`${API_BASE_URL}/targeting-locations/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(targetingLocation)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('API 응답:', data);
-      return data;
+      const response = await apiClient.put(`/targeting-locations/${id}`, targetingLocation);
+      console.log('API 응답:', response.data);
+      return response.data;
     } catch (error) {
       console.error('타겟팅 위치 수정 실패:', error);
       throw error;
@@ -123,7 +99,7 @@ class ApiService {
   async deleteTargetingLocation(id) {
     try {
       const response = await apiClient.delete(`/targeting-locations/${id}`);
-      return response.data.success;
+      return response.data;
     } catch (error) {
       console.error('타겟팅 위치 삭제 실패:', error);
       throw error;
@@ -170,19 +146,8 @@ class ApiService {
   // 캠페인 관련 API
   async createCampaign(campaignData) {
     try {
-      const response = await fetch(`${API_BASE_URL}/campaigns`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(campaignData),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
+      const response = await apiClient.post(`/campaigns`, campaignData);
+      return response.data;
     } catch (error) {
       console.error('캠페인 생성 실패:', error);
       throw error;
@@ -221,10 +186,41 @@ class ApiService {
 
   async deleteCampaign(id) {
     try {
+      console.log('API 서비스 - 삭제 요청 ID:', id);
+      console.log('API 서비스 - 삭제 요청 URL:', `/campaigns/${id}`);
+      
       const response = await apiClient.delete(`/campaigns/${id}`);
+      console.log('API 서비스 - 삭제 응답:', response.data);
+      
       return response.data.success;
     } catch (error) {
       console.error('캠페인 삭제 실패:', error);
+      console.error('API 서비스 - 에러 상세:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
+      throw error;
+    }
+  }
+
+  async updateCampaign(id, campaignData) {
+    try {
+      const response = await apiClient.put(`/campaigns/${id}`, campaignData);
+      return response.data;
+    } catch (error) {
+      console.error('캠페인 수정 실패:', error);
+      throw error;
+    }
+  }
+
+  async getCampaignById(id) {
+    try {
+      const response = await apiClient.get(`/campaigns/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('캠페인 조회 실패:', error);
       throw error;
     }
   }
